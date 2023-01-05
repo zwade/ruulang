@@ -1,0 +1,31 @@
+{
+    "name": "slang-vscode",
+    "displayName": "slang",
+    "description": "Slang VSCode",
+    "version": "0.0.1",
+    "engines": {
+        "vscode": "^1.34.0"
+    },
+    "activationEvents": [
+        "onLanguage:slang"
+    ],
+    "main": "extension.js",
+    "contributes": {
+        "languages": [{
+            "id": "slang",
+            "aliases": [
+                "SLang",
+                "Security Language"
+            ],
+            "extensions": [
+                ".slang"
+            ],
+            "configuration": "./language-configuration.json"
+        }],
+        "grammars": [{
+            "language": "slang",
+            "scopeName": "source.slang",
+            "path": "./syntaxes/slang.tmLanguage.json"
+        }]
+    }
+}

@@ -1,0 +1,132 @@
+{
+    "scopeName": "source.slang",
+    "patterns": [{
+        "include": "#entrypoint"
+    }, {
+        "include": "#line-comment"
+    }],
+    "repository": {
+        "line-comment": {
+            "begin": "//",
+            "end": "$",
+            "name": "comment.line.c"
+        },
+
+        "entrypoint": {
+            "begin": "(@[a-zA-Z0-9-_]+)\\s*(\\{)",
+            "end": "\\}",
+            "beginCaptures": {
+                "1": {
+                    "name": "keyword.control"
+                },
+                "2": {
+                    "name": "puncutation.brace.open"
+                }
+            },
+            "endCaptures": {
+                "0": {
+                    "name": "puncutation.brace.close"
+                }
+            },
+            "patterns": [{
+                "include": "#expression"
+            }]
+        },
+
+        "grant": {
+            "match": "([a-zA-Z0-9-_]+)(;)",
+            "captures": {
+                "1": {
+                    "name": "string"
+                },
+                "2": {
+                    "name": "punctuation.terminator"
+                }
+            }
+        },
+
+        "rule": {
+            "begin": "[a-zA-Z0-9-_]+\\s*(?![a-zA-Z0-9-_;])",
+            "end": "(?={)",
+            "name": "other",
+            "patterns": [{
+                "include": "#attribute"
+            }]
+        },
+
+        "attribute": {
+            "patterns": [{
+                    "include": "#attribute-noarg"
+                },
+                {
+                    "include": "#attribute-arg"
+                }
+            ]
+        },
+
+        "attribute-noarg": {
+            "match": "(:[a-zA-Z0-9-_]+)\\s*(?![a-zA-Z0-9-_\\(])",
+            "name": "entity.other.attribute-name"
+        },
+
+        "attribute-arg": {
+            "begin": "(:[a-zA-Z0-9-_]+)(\\()",
+            "end": "(\\))",
+            "beginCaptures": {
+                "1": {
+                    "name": "entity.other.attribute-name"
+                },
+                "2": {
+                    "name": "punctuation.paren.open"
+                }
+            },
+            "endCaptures": {
+                "1": {
+                    "name": "punctuation.paren.close"
+                }
+            },
+            "patterns": [{
+                "include": "#attribute-argument"
+            }]
+        },
+
+        "attribute-argument": {
+            "match": "([a-zA-Z0-9-_]+)",
+            "name": "support.type.property-name"
+        },
+
+        "rule-group": {
+            "begin": "\\{",
+            "end": "\\}",
+            "beginCaptures": {
+                "0": {
+                    "name": "punctuation.brace.open"
+                }
+            },
+            "endCaptures": {
+                "0": {
+                    "name": "punctuation.brace.close"
+                }
+            },
+            "patterns": [{
+                "include": "#expression"
+            }]
+        },
+
+        "expression": {
+            "patterns": [{
+                    "include": "#rule"
+                },
+                {
+                    "include": "#rule-group"
+                },
+                {
+                    "include": "#grant"
+                },
+                {
+                    "include": "#line-comment"
+                }
+            ]
+        }
+    }
+}

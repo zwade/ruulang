@@ -1,0 +1,33 @@
+use std::str::FromStr;
+use crate::parser::slang_ast::{Relationship, Attribute, Entrypoint};
+use lalrpop_util::ParseError;
+
+grammar;
+
+match {
+    r"//[^\n\r]*[\n\r]*" => { },
+} else {
+    r"\s*" => { },
+    _ // Everything else
+}
+
+pub Term: Vec<Entrypoint> = {
+    <e: (<Entry>)*> => e
+};
+
+pub Entry: Entrypoint = {
+    "@" <s:Symbol> "{" <r: (<Rel>)*> "}" => Entrypoint { entrypoint: s, rules: r },
+}
+
+pub Rel: Relationship = {
+    <s:Symbol> <a: (<Attr>)*> "{" <r: (<Symbol> ";")*> <c: (<Rel>)*> "}" => Relationship { relationship: s, attributes: a, grants: r, rules: c },
+}
+
+pub Attr: Attribute = {
+    ":" <s:Symbol> "(" <a: (<Symbol>)*> ")" => Attribute { name: s, arguments: a },
+    ":" <s:Symbol> => Attribute { name: s, arguments: vec![] },
+}
+
+
+
+Symbol: String = <s:r"[a-zA-Z][a-zA-Z0-9-_]*"> => s.to_string();
