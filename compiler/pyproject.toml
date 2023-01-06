@@ -1,0 +1,12 @@
+[project]
+name="slang_dsl"
+description="A parser and serializer utility for the slang DSL"
+authors = [{email="zach@dttw.tech", name="Zach Wade"}]
+
+[build-system]
+requires = ["maturin>=0.14,<0.15"]
+build-backend = "maturin"
+
+[tool.maturin]
+bindings = "pyo3"
+compatibility = "linux"

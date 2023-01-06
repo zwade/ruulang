@@ -1,23 +1,141 @@
+use std::{collections::hash_map::DefaultHasher, hash::{Hash, Hasher}};
+
+use pyo3::{pyclass, pymethods};
 use serde::{Serialize, Deserialize};
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[pyclass]
 pub struct Attribute {
     pub name: String,
     pub arguments: Vec<String>,
 }
 
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-pub struct Relationship {
-    pub relationship: String,
-    pub attributes: Vec<Attribute>,
-    pub grants: Vec<String>,
-    pub rules: Vec<Relationship>,
+#[pymethods]
+impl Attribute {
+    #[new]
+    fn new(name: String, arguments: Vec<String>) -> Self {
+        Attribute {
+            name,
+            arguments,
+        }
+    }
+
+    fn __hash__(&self) -> u64 {
+        let mut hasher = DefaultHasher::new();
+        self.hash(&mut hasher);
+        hasher.finish()
+    }
+
+    fn __repr__(&self) -> String {
+        format!("Attribute(name={}, arguments={:?})", self.name, self.arguments)
+    }
+
+    fn serialize(&self) -> String {
+        self.slang_serialize(0)
+    }
+
+    fn json(&self) -> String {
+        serde_json::to_string(self).unwrap()
+    }
+}
+
+impl Hash for Attribute {
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        self.name.hash(state);
+        self.arguments.hash(state);
+    }
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[pyclass]
+pub struct Rule {
+    pub relationship: String,
+    pub attributes: Vec<Attribute>,
+    pub grants: Vec<String>,
+    pub rules: Vec<Rule>,
+}
+
+#[pymethods]
+impl Rule {
+    #[new]
+    fn new(relationship: String, attributes: Vec<Attribute>, grants: Vec<String>, rules: Vec<Rule>) -> Self {
+        Rule {
+            relationship,
+            attributes,
+            grants,
+            rules,
+        }
+    }
+
+    fn __hash__(&self) -> u64 {
+        let mut hasher = DefaultHasher::new();
+        self.hash(&mut hasher);
+        hasher.finish()
+    }
+
+    fn __repr__(&self) -> String {
+        format!("Relationship(relationship={}, attributes={:?}, grants={:?}, rules={:?})", self.relationship, self.attributes, self.grants, self.rules)
+    }
+
+    fn serialize(&self) -> String {
+        self.slang_serialize(0)
+    }
+
+    fn json(&self) -> String {
+        serde_json::to_string(self).unwrap()
+    }
+}
+
+impl Hash for Rule {
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        self.relationship.hash(state);
+        self.attributes.hash(state);
+        self.grants.hash(state);
+        self.rules.hash(state);
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[pyclass]
 pub struct Entrypoint {
     pub entrypoint: String,
-    pub rules: Vec<Relationship>,
+    pub rules: Vec<Rule>,
+}
+
+#[pymethods]
+impl Entrypoint {
+    #[new]
+    fn new(entrypoint: String, rules: Vec<Rule>) -> Self {
+        Entrypoint {
+            entrypoint,
+            rules,
+        }
+    }
+
+    fn __hash__(&self) -> u64 {
+        let mut hasher = DefaultHasher::new();
+        self.hash(&mut hasher);
+        hasher.finish()
+    }
+
+    fn __repr__(&self) -> String {
+        format!("Entrypoint(entrypoint={}, rules={:?})", self.entrypoint, self.rules)
+    }
+
+    fn serialize(&self) -> String {
+        self.slang_serialize(0)
+    }
+
+    fn json(&self) -> String {
+        serde_json::to_string(self).unwrap()
+    }
+}
+
+impl Hash for Entrypoint {
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        self.entrypoint.hash(state);
+        self.rules.hash(state);
+    }
 }
 
 pub trait SlangSerialize {
@@ -48,7 +166,7 @@ impl SlangSerialize for Attribute {
     }
 }
 
-impl SlangSerialize for Relationship {
+impl SlangSerialize for Rule {
     fn slang_serialize(&self, indent: usize) -> String {
         let mut result = String::new();
 

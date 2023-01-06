@@ -1,6 +1,4 @@
-use std::str::FromStr;
-use crate::parser::slang_ast::{Relationship, Attribute, Entrypoint};
-use lalrpop_util::ParseError;
+use crate::parser::slang_ast::{Rule, Attribute, Entrypoint};
 
 grammar;
 
@@ -19,8 +17,8 @@ pub Entry: Entrypoint = {
     "@" <s:Symbol> "{" <r: (<Rel>)*> "}" => Entrypoint { entrypoint: s, rules: r },
 }
 
-pub Rel: Relationship = {
-    <s:Symbol> <a: (<Attr>)*> "{" <r: (<Symbol> ";")*> <c: (<Rel>)*> "}" => Relationship { relationship: s, attributes: a, grants: r, rules: c },
+pub Rel: Rule = {
+    <s:Symbol> <a: (<Attr>)*> "{" <r: (<Symbol> ";")*> <c: (<Rel>)*> "}" => Rule { relationship: s, attributes: a, grants: r, rules: c },
 }
 
 pub Attr: Attribute = {

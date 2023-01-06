@@ -1,7 +1,7 @@
 use std::env;
 use std::io::Read;
 
-use slang::slang::TermParser;
+use slang_dsl::slang::TermParser;
 
 fn main() {
     let args: Vec<String> = env::args().collect();

@@ -1,5 +1,5 @@
 [package]
-name = "slang"
+name = "slang_dsl"
 version = "0.1.0"
 edition = "2021"
 
@@ -12,3 +12,9 @@ lalrpop-util = { version = "0.19.7",  features = ["lexer"] }
 regex = "1"
 serde = { version = "1.0.151", features = ["serde_derive", "derive"] }
 serde_yaml = "0.9.16"
+pyo3 = { version = "0.17.3", features = ["extension-module", "abi3-py37"] }
+serde_json = "1.0.91"
+
+[lib]
+name = "slang_dsl"
+crate-type = ["cdylib", "lib"]
