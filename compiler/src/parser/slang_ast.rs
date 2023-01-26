@@ -1,7 +1,10 @@
-use std::{collections::hash_map::DefaultHasher, hash::{Hash, Hasher}};
+use std::{
+    collections::hash_map::DefaultHasher,
+    hash::{Hash, Hasher},
+};
 
-use pyo3::{pyclass, pymethods};
-use serde::{Serialize, Deserialize};
+use pyo3::{pyclass, pymethods, types::PyDict, Python, ToPyObject};
+use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[pyclass]
@@ -14,10 +17,7 @@ pub struct Attribute {
 impl Attribute {
     #[new]
     fn new(name: String, arguments: Vec<String>) -> Self {
-        Attribute {
-            name,
-            arguments,
-        }
+        Attribute { name, arguments }
     }
 
     fn __hash__(&self) -> u64 {
@@ -27,7 +27,10 @@ impl Attribute {
     }
 
     fn __repr__(&self) -> String {
-        format!("Attribute(name={}, arguments={:?})", self.name, self.arguments)
+        format!(
+            "Attribute(name={}, arguments={:?})",
+            self.name, self.arguments
+        )
     }
 
     fn serialize(&self) -> String {
@@ -36,6 +39,13 @@ impl Attribute {
 
     fn json(&self) -> String {
         serde_json::to_string(self).unwrap()
+    }
+
+    fn dict<'a>(&self, py: Python<'a>) -> &'a PyDict {
+        let dict = PyDict::new(py);
+        let _ = dict.set_item("name", self.name.to_object(py));
+        let _ = dict.set_item("arguments", self.arguments.to_object(py));
+        dict
     }
 }
 
@@ -51,19 +61,27 @@ impl Hash for Attribute {
 pub struct Rule {
     pub relationship: String,
     pub attributes: Vec<Attribute>,
-    pub grants: Vec<String>,
+    pub grants: Vec<Vec<String>>,
     pub rules: Vec<Rule>,
+    pub recursive: bool,
 }
 
 #[pymethods]
 impl Rule {
     #[new]
-    fn new(relationship: String, attributes: Vec<Attribute>, grants: Vec<String>, rules: Vec<Rule>) -> Self {
+    fn new(
+        relationship: String,
+        attributes: Vec<Attribute>,
+        grants: Vec<Vec<String>>,
+        rules: Vec<Rule>,
+        recursive: bool,
+    ) -> Self {
         Rule {
             relationship,
             attributes,
             grants,
             rules,
+            recursive,
         }
     }
 
@@ -74,7 +92,10 @@ impl Rule {
     }
 
     fn __repr__(&self) -> String {
-        format!("Relationship(relationship={}, attributes={:?}, grants={:?}, rules={:?})", self.relationship, self.attributes, self.grants, self.rules)
+        format!(
+            "Relationship(relationship={}, attributes={:?}, grants={:?}, rules={:?})",
+            self.relationship, self.attributes, self.grants, self.rules
+        )
     }
 
     fn serialize(&self) -> String {
@@ -83,6 +104,29 @@ impl Rule {
 
     fn json(&self) -> String {
         serde_json::to_string(self).unwrap()
+    }
+
+    fn dict<'a>(&self, py: Python<'a>) -> &'a PyDict {
+        let dict = PyDict::new(py);
+        let _ = dict.set_item("relationship", self.relationship.to_object(py));
+        let _ = dict.set_item(
+            "attributes",
+            self.attributes
+                .iter()
+                .map(|attr| attr.dict(py))
+                .collect::<Vec<_>>()
+                .to_object(py),
+        );
+        let _ = dict.set_item("grants", self.grants.to_object(py));
+        let _ = dict.set_item(
+            "rules",
+            self.rules
+                .iter()
+                .map(|rule| rule.dict(py))
+                .collect::<Vec<_>>()
+                .to_object(py),
+        );
+        dict
     }
 }
 
@@ -106,10 +150,7 @@ pub struct Entrypoint {
 impl Entrypoint {
     #[new]
     fn new(entrypoint: String, rules: Vec<Rule>) -> Self {
-        Entrypoint {
-            entrypoint,
-            rules,
-        }
+        Entrypoint { entrypoint, rules }
     }
 
     fn __hash__(&self) -> u64 {
@@ -119,7 +160,10 @@ impl Entrypoint {
     }
 
     fn __repr__(&self) -> String {
-        format!("Entrypoint(entrypoint={}, rules={:?})", self.entrypoint, self.rules)
+        format!(
+            "Entrypoint(entrypoint={}, rules={:?})",
+            self.entrypoint, self.rules
+        )
     }
 
     fn serialize(&self) -> String {
@@ -128,6 +172,20 @@ impl Entrypoint {
 
     fn json(&self) -> String {
         serde_json::to_string(self).unwrap()
+    }
+
+    fn dict<'a>(&self, py: Python<'a>) -> &'a PyDict {
+        let dict = PyDict::new(py);
+        let _ = dict.set_item("entrypoint", self.entrypoint.to_object(py));
+        let _ = dict.set_item(
+            "rules",
+            self.rules
+                .iter()
+                .map(|rule| rule.dict(py))
+                .collect::<Vec<_>>()
+                .to_object(py),
+        );
+        dict
     }
 }
 
@@ -168,6 +226,10 @@ impl SlangSerialize for Attribute {
 
 impl SlangSerialize for Rule {
     fn slang_serialize(&self, indent: usize) -> String {
+        if self.relationship == "*" {
+            return format!("{}*\n", " ".repeat(indent * 4));
+        }
+
         let mut result = String::new();
 
         result.push_str(format!("{}{}", " ".repeat(indent * 4), self.relationship).as_str());
@@ -182,7 +244,10 @@ impl SlangSerialize for Rule {
 
         if self.grants.len() > 0 {
             for grant in self.grants.iter() {
-                result.push_str(format!("{}{};\n", " ".repeat((indent + 1) * 4).as_str(), grant).as_str());
+                let grant_str = grant.join(".");
+                result.push_str(
+                    format!("{}{};\n", " ".repeat((indent + 1) * 4).as_str(), grant_str).as_str(),
+                );
             }
 
             if self.rules.len() > 0 {

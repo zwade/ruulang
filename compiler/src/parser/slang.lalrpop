@@ -14,11 +14,32 @@ pub Term: Vec<Entrypoint> = {
 };
 
 pub Entry: Entrypoint = {
-    "@" <s:Symbol> "{" <r: (<Rel>)*> "}" => Entrypoint { entrypoint: s, rules: r },
+    "@" <s:Symbol> "{" <r: (<Rule>)*> "}" => Entrypoint { entrypoint: s, rules: r },
 }
 
 pub Rel: Rule = {
-    <s:Symbol> <a: (<Attr>)*> "{" <r: (<Symbol> ";")*> <c: (<Rel>)*> "}" => Rule { relationship: s, attributes: a, grants: r, rules: c },
+    <s:Symbol> <a: (<Attr>)*> "{" <r: (<Grant> ";")*> <c: (<Rule>)*> "}" => Rule { relationship: s, attributes: a, grants: r, rules: c, recursive: false },
+}
+
+pub Uni: Rule = {
+    <s:Symbol> <a: (<Attr>)*> "{" "*" "}" => Rule {
+        relationship: s,
+        attributes: a,
+        grants: vec![vec!["read".to_string()], vec!["write".to_string()]],
+        rules: vec![Rule {
+            relationship: "*".to_string(),
+            attributes: vec![],
+            grants: vec![vec!["read".to_string()], vec!["write".to_string()]],
+            rules: vec![],
+            recursive: true,
+        }],
+        recursive: false,
+    }
+}
+
+pub Rule: Rule = {
+    <r: Rel> => r,
+    <u: Uni> => u,
 }
 
 pub Attr: Attribute = {
@@ -26,6 +47,12 @@ pub Attr: Attribute = {
     ":" <s:Symbol> => Attribute { name: s, arguments: vec![] },
 }
 
-
+pub Grant: Vec<String> = {
+    <s: Symbol> <sp: ("." <Symbol>)*> => {
+        let mut vec = vec![s];
+        vec.extend(sp);
+        vec
+    }
+}
 
 Symbol: String = <s:r"[a-zA-Z][a-zA-Z0-9-_]*"> => s.to_string();

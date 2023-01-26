@@ -34,7 +34,7 @@
         },
 
         "grant": {
-            "match": "([a-zA-Z0-9-_]+)(;)",
+            "match": "([a-zA-Z0-9-_\\.]+)(;)",
             "captures": {
                 "1": {
                     "name": "string"
@@ -46,7 +46,7 @@
         },
 
         "rule": {
-            "begin": "[a-zA-Z0-9-_]+\\s*(?![a-zA-Z0-9-_;])",
+            "begin": "[a-zA-Z0-9-_]+\\s*(?![a-zA-Z0-9-_\\.;])",
             "end": "(?={)",
             "name": "other",
             "patterns": [{
@@ -113,12 +113,20 @@
             }]
         },
 
+        "universal": {
+            "match": "(\\*)",
+            "name": "keyword.control"
+        },
+
         "expression": {
             "patterns": [{
                     "include": "#rule"
                 },
                 {
                     "include": "#rule-group"
+                },
+                {
+                    "include": "#universal"
                 },
                 {
                     "include": "#grant"

@@ -1,7 +1,7 @@
 use std::env;
 use std::io::Read;
 
-use slang_dsl::parser::slang_ast::{SlangSerialize, Entrypoint};
+use slang_dsl::parser::slang_ast::{Entrypoint, SlangSerialize};
 
 fn main() {
     let args: Vec<String> = env::args().collect();
