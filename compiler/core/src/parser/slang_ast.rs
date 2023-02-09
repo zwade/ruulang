@@ -1,6 +1,4 @@
-use std::{
-    hash::{Hash, Hasher},
-};
+use std::hash::{Hash, Hasher};
 
 use serde::{Deserialize, Serialize};
 

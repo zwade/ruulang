@@ -1,10 +1,8 @@
 use pyo3::{pyfunction, pymodule, types::PyModule, wrap_pyfunction, PyResult};
 
-use slang_core::{
-    slang::TermParser,
-};
+use slang_core::slang::TermParser;
 
-use crate::bindings::{PyEntrypoint, PyRule, PyAttribute, PySlangFile};
+use crate::bindings::{PyAttribute, PyEntrypoint, PyRule, PySlangFile};
 
 #[pyfunction]
 fn parse(s: &str) -> PyResult<PySlangFile> {

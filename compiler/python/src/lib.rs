@@ -1,3 +1,2 @@
-
-pub mod python;
 pub mod bindings;
+pub mod python;

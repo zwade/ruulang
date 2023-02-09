@@ -1,8 +1,11 @@
-use std::{collections::hash_map::DefaultHasher, hash::{Hash, Hasher}};
+use std::{
+    collections::hash_map::DefaultHasher,
+    hash::{Hash, Hasher},
+};
 
-use pyo3::{pymethods, types::PyDict, Python, pyclass};
-use slang_core::parser::slang_ast::{SlangFile, Entrypoint, SlangSerialize, Rule, Attribute};
+use pyo3::{pyclass, pymethods, types::PyDict, Python};
 use serde::{Deserialize, Serialize};
+use slang_core::parser::slang_ast::{Attribute, Entrypoint, Rule, SlangFile, SlangSerialize};
 
 trait AsDict {
     fn as_dict<'a>(&self, py: Python<'a>) -> &'a PyDict;
@@ -20,10 +23,25 @@ impl AsDict for Attribute {
 impl AsDict for Rule {
     fn as_dict<'a>(&self, py: Python<'a>) -> &'a PyDict {
         let dict = PyDict::new(py);
-        dict.set_item("relationship", self.relationship.clone()).unwrap();
-        dict.set_item("attributes", self.attributes.iter().map(|attr| attr.as_dict(py)).collect::<Vec<_>>()).unwrap();
+        dict.set_item("relationship", self.relationship.clone())
+            .unwrap();
+        dict.set_item(
+            "attributes",
+            self.attributes
+                .iter()
+                .map(|attr| attr.as_dict(py))
+                .collect::<Vec<_>>(),
+        )
+        .unwrap();
         dict.set_item("grants", self.grants.clone()).unwrap();
-        dict.set_item("rules", self.rules.iter().map(|rule| rule.as_dict(py)).collect::<Vec<_>>()).unwrap();
+        dict.set_item(
+            "rules",
+            self.rules
+                .iter()
+                .map(|rule| rule.as_dict(py))
+                .collect::<Vec<_>>(),
+        )
+        .unwrap();
         dict.set_item("recursive", self.recursive).unwrap();
         dict
     }
@@ -32,8 +50,16 @@ impl AsDict for Rule {
 impl AsDict for Entrypoint {
     fn as_dict<'a>(&self, py: Python<'a>) -> &'a PyDict {
         let dict = PyDict::new(py);
-        dict.set_item("entrypoint", self.entrypoint.clone()).unwrap();
-        dict.set_item("rules", self.rules.iter().map(|rule| rule.as_dict(py)).collect::<Vec<_>>()).unwrap();
+        dict.set_item("entrypoint", self.entrypoint.clone())
+            .unwrap();
+        dict.set_item(
+            "rules",
+            self.rules
+                .iter()
+                .map(|rule| rule.as_dict(py))
+                .collect::<Vec<_>>(),
+        )
+        .unwrap();
         dict
     }
 }
@@ -41,7 +67,14 @@ impl AsDict for Entrypoint {
 impl AsDict for SlangFile {
     fn as_dict<'a>(&self, py: Python<'a>) -> &'a PyDict {
         let dict = PyDict::new(py);
-        dict.set_item("entrypoints", self.entrypoints.iter().map(|entrypoint| entrypoint.as_dict(py)).collect::<Vec<_>>()).unwrap();
+        dict.set_item(
+            "entrypoints",
+            self.entrypoints
+                .iter()
+                .map(|entrypoint| entrypoint.as_dict(py))
+                .collect::<Vec<_>>(),
+        )
+        .unwrap();
         dict
     }
 }
@@ -56,7 +89,9 @@ pub struct PyAttribute {
 impl PyAttribute {
     #[new]
     fn new(name: String, arguments: Vec<String>) -> Self {
-        Self { attribute: Attribute { name, arguments } }
+        Self {
+            attribute: Attribute { name, arguments },
+        }
     }
 
     fn __hash__(&self) -> u64 {
@@ -85,7 +120,6 @@ impl PyAttribute {
     }
 }
 
-
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[pyclass]
 pub struct PyRule {
@@ -105,11 +139,17 @@ impl PyRule {
         Self {
             rule: Rule {
                 relationship,
-                attributes: attributes.iter().map(|attr| attr.attribute.clone()).collect::<Vec<_>>(),
+                attributes: attributes
+                    .iter()
+                    .map(|attr| attr.attribute.clone())
+                    .collect::<Vec<_>>(),
                 grants,
-                rules: rules.iter().map(|rule| rule.rule.clone()).collect::<Vec<_>>(),
+                rules: rules
+                    .iter()
+                    .map(|rule| rule.rule.clone())
+                    .collect::<Vec<_>>(),
                 recursive,
-            }
+            },
         }
     }
 
@@ -139,7 +179,6 @@ impl PyRule {
     }
 }
 
-
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[pyclass]
 pub struct PyEntrypoint {
@@ -150,7 +189,12 @@ pub struct PyEntrypoint {
 impl PyEntrypoint {
     #[new]
     fn new(entrypoint: String, rules: Vec<PyRule>) -> Self {
-        Self { entrypoint: Entrypoint { entrypoint, rules: rules.iter().map(|r| r.rule.clone()).collect::<Vec<_>>() } }
+        Self {
+            entrypoint: Entrypoint {
+                entrypoint,
+                rules: rules.iter().map(|r| r.rule.clone()).collect::<Vec<_>>(),
+            },
+        }
     }
 
     fn __hash__(&self) -> u64 {
@@ -189,7 +233,14 @@ pub struct PySlangFile {
 impl PySlangFile {
     #[new]
     fn new(entrypoints: Vec<PyEntrypoint>) -> Self {
-        Self { slang_file: SlangFile { entrypoints: entrypoints.iter().map(|e| e.entrypoint.clone()).collect::<Vec<_>>() } }
+        Self {
+            slang_file: SlangFile {
+                entrypoints: entrypoints
+                    .iter()
+                    .map(|e| e.entrypoint.clone())
+                    .collect::<Vec<_>>(),
+            },
+        }
     }
 
     fn __hash__(&self) -> u64 {
