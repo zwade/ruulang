@@ -1,4 +1,4 @@
-use crate::parser::slang_ast::{Rule, Attribute, Entrypoint};
+use crate::parser::slang_ast::{Rule, Attribute, Entrypoint, SlangFile};
 
 grammar;
 
@@ -9,8 +9,8 @@ match {
     _ // Everything else
 }
 
-pub Term: Vec<Entrypoint> = {
-    <e: (<Entry>)*> => e
+pub Term: SlangFile = {
+    <e: (<Entry>)*> => SlangFile { entrypoints: e }
 };
 
 pub Entry: Entrypoint = {

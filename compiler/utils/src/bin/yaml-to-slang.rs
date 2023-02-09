@@ -1,7 +1,7 @@
 use std::env;
 use std::io::Read;
 
-use slang_dsl::parser::slang_ast::{Entrypoint, SlangSerialize};
+use slang_core::parser::slang_ast::{SlangFile, SlangSerialize};
 
 fn main() {
     let args: Vec<String> = env::args().collect();
@@ -19,7 +19,7 @@ fn main() {
         std::fs::read_to_string(&args[1]).unwrap()
     };
 
-    let parsed: Vec<Entrypoint> = serde_yaml::from_str(&contents).unwrap();
+    let parsed: SlangFile = serde_yaml::from_str(&contents).unwrap();
 
     let as_slang = parsed.slang_serialize(0);
     print!("{}", as_slang);

@@ -1,0 +1,29 @@
+{
+  "entrypoints": [
+    {
+      "entrypoint": "user",
+      "rules": [
+        {
+          "relationship": "personnel",
+          "attributes": [
+            {
+              "name": "is-admin",
+              "arguments": []
+            }
+          ],
+          "grants": [
+            [
+              "read",
+              "basic"
+            ],
+            [
+              "write"
+            ]
+          ],
+          "rules": [],
+          "recursive": false
+        }
+      ]
+    }
+  ]
+}

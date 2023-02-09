@@ -5,5 +5,3 @@ lalrpop_mod!(pub slang, "/parser/slang.rs"); // synthesized by LALRPOP
 pub mod parser {
     pub mod slang_ast;
 }
-
-pub mod python;
