@@ -5,7 +5,7 @@ use std::{
 
 use pyo3::{pyclass, pymethods, types::PyDict, Python};
 use serde::{Deserialize, Serialize};
-use slang_core::parser::slang_ast::{Attribute, Entrypoint, Rule, SlangFile, SlangSerialize};
+use slang_core::parser::slang_ast::{Attribute, Entrypoint, Rule, SlangFile, SlangSerialize, Fragment};
 
 trait AsDict {
     fn as_dict<'a>(&self, py: Python<'a>) -> &'a PyDict;
@@ -129,12 +129,14 @@ pub struct PyRule {
 #[pymethods]
 impl PyRule {
     #[new]
+    #[args(include_fragments="Vec::new()")]
     fn new(
         relationship: String,
         attributes: Vec<PyAttribute>,
         grants: Vec<Vec<String>>,
         rules: Vec<PyRule>,
         recursive: bool,
+        include_fragments: Vec<String>,
     ) -> Self {
         Self {
             rule: Rule {
@@ -149,6 +151,7 @@ impl PyRule {
                     .map(|rule| rule.rule.clone())
                     .collect::<Vec<_>>(),
                 recursive,
+                include_fragments,
             },
         }
     }
@@ -225,6 +228,26 @@ impl PyEntrypoint {
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[pyclass]
+pub struct PyFragment {
+    fragment: Fragment,
+}
+
+#[pymethods]
+impl PyFragment {
+    #[new]
+    fn new(name: String, grants: Vec<Vec<String>>, rules: Vec<PyRule>) -> Self {
+        Self {
+            fragment: Fragment {
+                name,
+                grants,
+                rules: rules.iter().map(|r| r.rule.clone()).collect::<Vec<_>>(),
+            },
+        }
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[pyclass]
 pub struct PySlangFile {
     slang_file: SlangFile,
 }
@@ -232,12 +255,18 @@ pub struct PySlangFile {
 #[pymethods]
 impl PySlangFile {
     #[new]
-    fn new(entrypoints: Vec<PyEntrypoint>) -> Self {
+    #[args(fragments="Vec::new()")]
+    fn new(entrypoints: Vec<PyEntrypoint>, fragments: Vec<PyFragment>) -> Self {
         Self {
             slang_file: SlangFile {
                 entrypoints: entrypoints
                     .iter()
                     .map(|e| e.entrypoint.clone())
+                    .collect::<Vec<_>>(),
+
+                fragments: fragments
+                    .iter()
+                    .map(|f| f.fragment.clone())
                     .collect::<Vec<_>>(),
             },
         }

@@ -20,9 +20,76 @@
               "write"
             ]
           ],
-          "rules": [],
+          "rules": [
+            {
+              "relationship": "supplier-app",
+              "attributes": [],
+              "grants": [],
+              "rules": [],
+              "recursive": false,
+              "include_fragments": [
+                "credit-app"
+              ]
+            }
+          ],
           "recursive": false
         }
+      ]
+    }
+  ],
+  "fragments": [
+    {
+      "name": "credit-app",
+      "rules": [
+        {
+          "relationship": "supplier",
+          "attributes": [],
+          "grants": [
+            [
+              "read"
+            ]
+          ],
+          "rules": [
+            {
+              "relationship": "supplier-app",
+              "attributes": [],
+              "grants": [],
+              "rules": [],
+              "recursive": false,
+              "include_fragments": [
+                "credit-app"
+              ]
+            }
+          ],
+          "recursive": false
+        },
+        {
+          "relationship": "customer",
+          "attributes": [],
+          "grants": [
+            [
+              "read"
+            ]
+          ],
+          "rules": [
+            {
+              "relationship": "customer-app",
+              "attributes": [],
+              "grants": [],
+              "rules": [],
+              "recursive": false,
+              "include_fragments": [
+                "credit-app"
+              ]
+            }
+          ],
+          "recursive": false
+        }
+      ],
+      "grants": [
+        [
+          "read"
+        ]
       ]
     }
   ]

@@ -1,24 +1,35 @@
-use crate::parser::slang_ast::{Rule, Attribute, Entrypoint, SlangFile};
+use crate::parser::{
+    slang_ast::{Rule, Attribute, Entrypoint, Fragment},
+    parser_constructs::{ParserStatement}
+};
 
 grammar;
 
 match {
     r"//[^\n\r]*[\n\r]*" => { },
+    r"/\*[^*]*\*+(?:[^/*][^*]*\*+)*/" => { },
 } else {
     r"\s*" => { },
     _ // Everything else
 }
 
-pub Term: SlangFile = {
-    <e: (<Entry>)*> => SlangFile { entrypoints: e }
+pub Term: Vec<ParserStatement> = {
+    <e: (<Entry>)*> => e
 };
 
-pub Entry: Entrypoint = {
-    "@" <s:Symbol> "{" <r: (<Rule>)*> "}" => Entrypoint { entrypoint: s, rules: r },
+pub Entry: ParserStatement = {
+    <f:Frag> => ParserStatement::Fragment(f),
+    "@" <s:Symbol> "{" <r: (<Rule>)*> "}" => ParserStatement::Entrypoint(
+        Entrypoint { entrypoint: s, rules: r }
+    ),
+}
+
+pub Frag: Fragment = {
+    "fragment" <s:Symbol> "{" <r: (<Grant> ";")*> <c: (<Rule>)*> "}" => Fragment { name: s, grants: r, rules: c },
 }
 
 pub Rel: Rule = {
-    <s:Symbol> <a: (<Attr>)*> "{" <r: (<Grant> ";")*> <c: (<Rule>)*> "}" => Rule { relationship: s, attributes: a, grants: r, rules: c, recursive: false },
+    <s:Symbol> <a: (<Attr>)*> "{" <r: (<Grant> ";")*> <f: ("#" <Symbol> ";")*> <c: (<Rule>)*> "}" => Rule { relationship: s, attributes: a, grants: r, rules: c, include_fragments: f, recursive: false },
 }
 
 pub Uni: Rule = {
@@ -32,7 +43,9 @@ pub Uni: Rule = {
             grants: vec![vec!["read".to_string()], vec!["write".to_string()]],
             rules: vec![],
             recursive: true,
+            include_fragments: vec![],
         }],
+        include_fragments: vec![],
         recursive: false,
     }
 }

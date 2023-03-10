@@ -1,5 +1,5 @@
 use notify::{DebouncedEvent, RecursiveMode, Watcher};
-use slang_core::slang::TermParser;
+use slang_core::parser::parser_constructs::{ParserStatement, ParserAssemble};
 use std::fs;
 use std::time::Duration;
 use std::{path::PathBuf, sync::mpsc::channel};
@@ -70,9 +70,10 @@ fn get_args() -> CliOptions {
 
 fn compile_one(input: &PathBuf, output: &PathBuf) {
     let input_content = fs::read_to_string(input).unwrap();
-    match TermParser::new().parse(input_content.as_str()) {
+    match ParserStatement::parse(input_content.as_str()) {
         Ok(parsed) => {
-            let as_json = serde_json::to_string_pretty(&parsed).unwrap();
+            let as_file = parsed.assemble();
+            let as_json = serde_json::to_string_pretty(&as_file).unwrap();
             fs::write(output, as_json).unwrap();
         }
         Err(e) => {

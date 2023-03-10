@@ -1,7 +1,8 @@
 {
-    "name": "slang-vscode",
-    "displayName": "slang",
-    "description": "Slang VSCode",
+    "name": "sec-lang-vscode",
+    "displayName": "slang Security Language",
+    "description": "Slang VSCode Syntax Highlighting",
+    "publisher": "zwad3",
     "version": "0.0.1",
     "engines": {
         "vscode": "^1.34.0"
