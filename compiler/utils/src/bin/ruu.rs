@@ -5,7 +5,7 @@ use std::time::Duration;
 
 use clap::{value_parser, Arg, ArgAction, Command};
 use notify::{DebouncedEvent, RecursiveMode, Watcher};
-use slang_core::{config::config::SlangConfig, workspace::workspace::Workspace};
+use ruulang_core::{config::config::RuuLangConfig, workspace::workspace::Workspace};
 
 #[derive(Debug)]
 struct CliOptions {
@@ -16,7 +16,7 @@ struct CliOptions {
 }
 
 fn get_args() -> CliOptions {
-    let matches = Command::new("slang")
+    let matches = Command::new("ruu")
         .version("0.1.0")
         .author("Zach Wade <zach@dttw.tech>")
         .arg(
@@ -49,7 +49,7 @@ fn get_args() -> CliOptions {
         )
         .get_matches();
 
-    let config_default = "slang.toml".to_string();
+    let config_default = "ruu.toml".to_string();
     let config_path = matches
         .get_one::<String>("config")
         .unwrap_or(&config_default);
@@ -100,7 +100,7 @@ async fn compile_on_change(workspace: &mut Workspace, options: &CliOptions) {
                 | DebouncedEvent::Remove(p)
                 | DebouncedEvent::Rename(p, _),
             ) => {
-                if workspace.file_is_slang_source(&p).await {
+                if workspace.file_is_ruulang_source(&p).await {
                     println!("Change detected, recompiling...");
                     compile_all(workspace, options).await;
                 }
@@ -119,7 +119,7 @@ async fn main() {
     let args = get_args();
 
     let working_dir = env::current_dir().unwrap();
-    let config = SlangConfig::load(Path::new(&args.config_path), &working_dir)
+    let config = RuuLangConfig::load(Path::new(&args.config_path), &working_dir)
         .await
         .unwrap();
 

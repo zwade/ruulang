@@ -3,11 +3,11 @@ use std::collections::HashMap;
 use crate::{
     parser::{
         parse_location::Parsed,
+        ruulang_ast::{Entrypoint, Fragment, Rule, RuuLangFile},
         schema_ast::Entity,
-        slang_ast::{Entrypoint, Fragment, Rule, SlangFile},
     },
     utils::{
-        error::{Result, SlangError, TypecheckError},
+        error::{Result, RuuLangError, TypecheckError},
         with_origin::WithOrigin,
     },
 };
@@ -23,7 +23,7 @@ pub struct Typechecker<'a> {
 impl<'a> Typechecker<'a> {
     pub fn new(
         entities: &'a Vec<WithOrigin<Parsed<Entity>>>,
-        schemas: &'a Vec<WithOrigin<Result<SlangFile>>>,
+        schemas: &'a Vec<WithOrigin<Result<RuuLangFile>>>,
     ) -> Self {
         let entity_map = Typechecker::parse_entities(entities, schemas);
         let fragments = Typechecker::parse_fragments(entities, schemas);
@@ -34,7 +34,7 @@ impl<'a> Typechecker<'a> {
         }
     }
 
-    pub fn validate_file(&self, file: &SlangFile) -> Vec<SlangError> {
+    pub fn validate_file(&self, file: &RuuLangFile) -> Vec<RuuLangError> {
         let mut violations = vec![];
 
         for fragment in &file.fragments {
@@ -50,7 +50,7 @@ impl<'a> Typechecker<'a> {
         violations
     }
 
-    fn validate_entrypoint(&self, entrypoint: &Parsed<Entrypoint>) -> Vec<SlangError> {
+    fn validate_entrypoint(&self, entrypoint: &Parsed<Entrypoint>) -> Vec<RuuLangError> {
         let mut violations = vec![];
 
         let starting_entity = match self.entities.get(&entrypoint.data.entrypoint) {
@@ -61,7 +61,7 @@ impl<'a> Typechecker<'a> {
                     missing_entity_name
                 ));
 
-                violations.push(SlangError::TypecheckError(TypecheckError::GeneralError(
+                violations.push(RuuLangError::TypecheckError(TypecheckError::GeneralError(
                     missing_entity_error,
                 )));
                 return violations;
@@ -78,7 +78,7 @@ impl<'a> Typechecker<'a> {
         violations
     }
 
-    fn validate_fragment(&self, fragment: &Parsed<Fragment>) -> Vec<SlangError> {
+    fn validate_fragment(&self, fragment: &Parsed<Fragment>) -> Vec<RuuLangError> {
         let mut violations = vec![];
 
         let starting_entity = match self.entities.get(&fragment.data.for_entity) {
@@ -89,7 +89,7 @@ impl<'a> Typechecker<'a> {
                     missing_entity_name
                 ));
 
-                violations.push(SlangError::TypecheckError(TypecheckError::GeneralError(
+                violations.push(RuuLangError::TypecheckError(TypecheckError::GeneralError(
                     missing_entity_error,
                 )));
                 return violations;
@@ -106,7 +106,7 @@ impl<'a> Typechecker<'a> {
                     starting_entity.name, grant_str
                 ));
 
-                violations.push(SlangError::TypecheckError(TypecheckError::GeneralError(
+                violations.push(RuuLangError::TypecheckError(TypecheckError::GeneralError(
                     grant_error,
                 )));
             }
@@ -124,7 +124,7 @@ impl<'a> Typechecker<'a> {
         &self,
         starting_entity: &TcEntity,
         current_rule: &Parsed<Rule>,
-    ) -> Vec<SlangError> {
+    ) -> Vec<RuuLangError> {
         let mut violations = vec![];
 
         let current_rel = match starting_entity.get_rule(&current_rule.data.relationship) {
@@ -141,7 +141,7 @@ impl<'a> Typechecker<'a> {
                     missing_relationship_name, bad_entity_name
                 ));
 
-                violations.push(SlangError::TypecheckError(TypecheckError::GeneralError(
+                violations.push(RuuLangError::TypecheckError(TypecheckError::GeneralError(
                     missing_rule_error,
                 )));
 
@@ -159,7 +159,7 @@ impl<'a> Typechecker<'a> {
                     missing_entity_name
                 ));
 
-                violations.push(SlangError::TypecheckError(TypecheckError::GeneralError(
+                violations.push(RuuLangError::TypecheckError(TypecheckError::GeneralError(
                     missing_entity_error,
                 )));
                 return violations;
@@ -173,7 +173,7 @@ impl<'a> Typechecker<'a> {
                 let grant_name = grant.data.clone().join(".");
 
                 let error = grant.as_with_data(format!("Invalid grant {}", grant_name));
-                violations.push(SlangError::TypecheckError(TypecheckError::GeneralError(
+                violations.push(RuuLangError::TypecheckError(TypecheckError::GeneralError(
                     error,
                 )));
             }
@@ -189,7 +189,7 @@ impl<'a> Typechecker<'a> {
                         &fragment_key.0, &fragment_key.1
                     ));
 
-                    violations.push(SlangError::TypecheckError(TypecheckError::GeneralError(
+                    violations.push(RuuLangError::TypecheckError(TypecheckError::GeneralError(
                         missing_fragment_error,
                     )));
                     continue;
@@ -208,7 +208,7 @@ impl<'a> Typechecker<'a> {
 
     fn parse_entities(
         entities: &'a Vec<WithOrigin<Parsed<Entity>>>,
-        schemas: &'a Vec<WithOrigin<Result<SlangFile>>>,
+        schemas: &'a Vec<WithOrigin<Result<RuuLangFile>>>,
     ) -> HashMap<String, Box<TcEntity>> {
         let mut entity_map = HashMap::<String, Box<TcEntity>>::new();
         let schemas = schemas.iter().filter_map(|x| match &x.data {
@@ -246,7 +246,7 @@ impl<'a> Typechecker<'a> {
 
     fn parse_fragments(
         entities: &'a Vec<WithOrigin<Parsed<Entity>>>,
-        schemas: &'a Vec<WithOrigin<Result<SlangFile>>>,
+        schemas: &'a Vec<WithOrigin<Result<RuuLangFile>>>,
     ) -> HashMap<(String, String), &'a Parsed<Fragment>> {
         schemas
             .into_iter()

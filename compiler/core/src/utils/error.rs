@@ -11,38 +11,40 @@ pub enum TypecheckError {
 }
 
 #[derive(Debug, Clone)]
-pub enum SlangError {
+pub enum RuuLangError {
     FileNotFound(String),
     SerdeParseError(toml::de::Error),
-    SlangParseError(usize),
+    RuuLangParseError(usize),
     TypecheckError(TypecheckError),
     Other(&'static str),
 }
 
-pub type Result<T> = std::result::Result<T, SlangError>;
+pub type Result<T> = std::result::Result<T, RuuLangError>;
 
-impl From<io::Error> for SlangError {
+impl From<io::Error> for RuuLangError {
     fn from(value: io::Error) -> Self {
-        SlangError::FileNotFound(value.to_string())
+        RuuLangError::FileNotFound(value.to_string())
     }
 }
 
-impl From<toml::de::Error> for SlangError {
+impl From<toml::de::Error> for RuuLangError {
     fn from(value: toml::de::Error) -> Self {
-        SlangError::SerdeParseError(value)
+        RuuLangError::SerdeParseError(value)
     }
 }
 
-impl<'a> From<ParseError<usize, Token<'a>, &'static str>> for SlangError {
+impl<'a> From<ParseError<usize, Token<'a>, &'static str>> for RuuLangError {
     fn from(value: ParseError<usize, Token<'a>, &'static str>) -> Self {
         match value {
-            ParseError::ExtraToken { token: (start, ..) } => SlangError::SlangParseError(start),
-            ParseError::InvalidToken { location } => SlangError::SlangParseError(location),
-            ParseError::UnrecognizedEOF { location, .. } => SlangError::SlangParseError(location),
+            ParseError::ExtraToken { token: (start, ..) } => RuuLangError::RuuLangParseError(start),
+            ParseError::InvalidToken { location } => RuuLangError::RuuLangParseError(location),
+            ParseError::UnrecognizedEOF { location, .. } => {
+                RuuLangError::RuuLangParseError(location)
+            }
             ParseError::UnrecognizedToken {
                 token: (start, ..), ..
-            } => SlangError::SlangParseError(start),
-            ParseError::User { error } => SlangError::Other(error),
+            } => RuuLangError::RuuLangParseError(start),
+            ParseError::User { error } => RuuLangError::Other(error),
         }
     }
 }

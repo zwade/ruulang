@@ -1,10 +1,10 @@
 [package]
-name = "slang_utils"
+name = "ruulang_utils"
 version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-slang_core = { path = "../core" }
+ruulang_core = { path = "../core" }
 serde_yaml = "0.9.16"
 notify = "4.0.17"
 clap = { version = "4.1.4", features = ["derive"] }

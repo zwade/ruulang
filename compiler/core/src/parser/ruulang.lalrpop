@@ -1,5 +1,5 @@
 use crate::parser::{
-    slang_ast::{Rule, Attribute, Entrypoint, Fragment},
+    ruulang_ast::{Rule, Attribute, Entrypoint, Fragment},
     parser_constructs::ParserStatement,
     parse_location::Parsed,
     schema_ast::{Entity, Relationship},

@@ -15,8 +15,8 @@ export function activate(context: ExtensionContext) {
     console.log("Activating server")
     const command =
         process.env.DEBUG_MODE === "true"
-            ? context.asAbsolutePath("./bin/slang-server-debug")
-            : context.asAbsolutePath("./bin/slang-server");
+            ? context.asAbsolutePath("./bin/ruulang-server-debug")
+            : context.asAbsolutePath("./bin/ruulang-server");
 
     const options: Executable = {
         command,
@@ -33,17 +33,17 @@ export function activate(context: ExtensionContext) {
     };
 
     const clientOptions: LanguageClientOptions = {
-        documentSelector: [{ language: "slang" }, { language: "plaintext" }],
+        documentSelector: [{ language: "ruulang" }, { language: "plaintext" }],
         synchronize: {
-            fileEvents: workspace.createFileSystemWatcher("**/*.slang"),
+            fileEvents: workspace.createFileSystemWatcher("**/*.ruulang"),
         }
     };
 
     context.subscriptions.push(commands.registerCommand("extension.sayHello", () => window.showInformationMessage('Hello World!')));
 
     client = new LanguageClient(
-        "Slang",
-        "Slang Language Server",
+        "RuuLang",
+        "RuuLang Language Server",
         serverOptions,
         clientOptions,
         true
@@ -54,7 +54,7 @@ export function activate(context: ExtensionContext) {
     context.subscriptions.push(commands.registerCommand("extension.restart", async () => {
         await client.stop();
         await client.start();
-        window.showInformationMessage("Slang Language Server restarted");
+        window.showInformationMessage("RuuLang Language Server restarted");
     }));
 }
 

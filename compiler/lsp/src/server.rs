@@ -1,6 +1,6 @@
-use slang_core::{
-    config::config::SlangConfig,
-    utils::error::{SlangError, TypecheckError},
+use ruulang_core::{
+    config::config::RuuLangConfig,
+    utils::error::{RuuLangError, TypecheckError},
     workspace::workspace::Workspace,
 };
 use tokio::sync::{MappedMutexGuard, Mutex, MutexGuard};
@@ -16,13 +16,13 @@ use tower_lsp::{
 
 use crate::utils::location_pair_to_range;
 
-pub struct SlangServer {
+pub struct RuuLangServer {
     client: Client,
 
     workspaces: Mutex<Vec<Workspace>>,
 }
 
-impl SlangServer {
+impl RuuLangServer {
     pub fn new(client: Client) -> Self {
         Self {
             client,
@@ -30,12 +30,12 @@ impl SlangServer {
         }
     }
 
-    async fn show_diagnostics(&self, uri: Url, contents: &String, errors: &Vec<SlangError>) {
+    async fn show_diagnostics(&self, uri: Url, contents: &String, errors: &Vec<RuuLangError>) {
         let mut diagnostics = vec![];
 
         for error in errors {
             match error {
-                SlangError::TypecheckError(TypecheckError::GeneralError(data)) => {
+                RuuLangError::TypecheckError(TypecheckError::GeneralError(data)) => {
                     if data.loc.is_none() {
                         continue;
                     }
@@ -52,7 +52,7 @@ impl SlangServer {
                         None,
                     ))
                 }
-                SlangError::SlangParseError(location) => diagnostics.push(Diagnostic::new(
+                RuuLangError::RuuLangParseError(location) => diagnostics.push(Diagnostic::new(
                     location_pair_to_range(&contents, *location as u32, *location as u32 + 1),
                     Some(DiagnosticSeverity::ERROR),
                     None,
@@ -135,15 +135,15 @@ impl SlangServer {
 }
 
 #[tower_lsp::async_trait]
-impl LanguageServer for SlangServer {
+impl LanguageServer for RuuLangServer {
     async fn initialize(&self, params: InitializeParams) -> jsonrpc::Result<InitializeResult> {
         let mut workspaces = vec![];
 
         if let Some(folders) = params.workspace_folders {
             for folder in folders {
                 let root_dir = folder.uri.to_file_path().unwrap();
-                let file_path = root_dir.join("slang.toml");
-                let config = SlangConfig::load(&file_path, &root_dir).await;
+                let file_path = root_dir.join("ruu.toml");
+                let config = RuuLangConfig::load(&file_path, &root_dir).await;
 
                 if let Err(err) = config {
                     self.client
@@ -183,7 +183,7 @@ impl LanguageServer for SlangServer {
         let file_uri = &params.text_document.uri;
         let contents = &params.text_document.text;
 
-        if params.text_document.language_id != "slang" {
+        if params.text_document.language_id != "ruulang" {
             return;
         }
 

@@ -1,9 +1,9 @@
 use serde::{Deserialize, Serialize};
 
-use super::{parse_location::Parsed, slang_ast::Attribute};
+use super::{parse_location::Parsed, ruulang_ast::Attribute};
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-pub struct SlangSchema {
+pub struct RuuLangSchema {
     pub entities: Vec<Parsed<Entity>>,
 }
 

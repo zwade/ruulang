@@ -2,16 +2,16 @@ use std::{collections::HashMap, path::PathBuf, str::from_utf8};
 
 use crate::{
     codegen::{codegen::Codegen, python::PythonCodegen},
-    config::config::SlangConfig,
+    config::config::RuuLangConfig,
     parser::{
         assembler::ParserAssemble,
         parse_location::Parsed,
         parser_constructs::ParserStatement,
-        schema_ast::{Entity, SlangSchema},
-        slang_ast::SlangFile,
+        ruulang_ast::RuuLangFile,
+        schema_ast::{Entity, RuuLangSchema},
     },
     typechecker::typechecker::Typechecker,
-    utils::error::{Result, SlangError, TypecheckError},
+    utils::error::{Result, RuuLangError, TypecheckError},
 };
 use async_recursion::async_recursion;
 use tokio::fs;
@@ -20,16 +20,16 @@ use crate::utils::with_origin::WithOrigin;
 
 #[derive(Debug)]
 pub struct Workspace {
-    pub config: SlangConfig,
+    pub config: RuuLangConfig,
     pub working_dir: PathBuf,
 
     source_files: HashMap<PathBuf, String>,
     entities: Vec<WithOrigin<Parsed<Entity>>>,
-    files: Vec<WithOrigin<Result<SlangFile>>>,
+    files: Vec<WithOrigin<Result<RuuLangFile>>>,
 }
 
 impl Workspace {
-    pub fn new(config: SlangConfig, working_dir: PathBuf) -> Self {
+    pub fn new(config: RuuLangConfig, working_dir: PathBuf) -> Self {
         return Workspace {
             config,
             working_dir,
@@ -52,8 +52,8 @@ impl Workspace {
         Ok(())
     }
 
-    pub async fn file_is_slang_source(&self, path: &PathBuf) -> bool {
-        let extn = "slang";
+    pub async fn file_is_ruulang_source(&self, path: &PathBuf) -> bool {
+        let extn = "ruulang";
         let path_extn = path.extension().unwrap_or_default();
 
         path_extn == extn
@@ -77,7 +77,7 @@ impl Workspace {
         }
     }
 
-    pub async fn typecheck_file(&self, path: &PathBuf) -> Vec<SlangError> {
+    pub async fn typecheck_file(&self, path: &PathBuf) -> Vec<RuuLangError> {
         let schema = self.files.iter().find(|x| &x.origin == path);
 
         match schema {
@@ -90,7 +90,7 @@ impl Workspace {
                 }
             }
 
-            None => vec![SlangError::FileNotFound(format!(
+            None => vec![RuuLangError::FileNotFound(format!(
                 "File not found: {}",
                 path.display()
             ))],
@@ -113,7 +113,7 @@ impl Workspace {
                     }
 
                     for error in errors {
-                        if let SlangError::TypecheckError(TypecheckError::GeneralError(
+                        if let RuuLangError::TypecheckError(TypecheckError::GeneralError(
                             general_error,
                         )) = error
                         {
@@ -177,7 +177,7 @@ impl Workspace {
         file_data: &HashMap<PathBuf, String>,
     ) -> (
         Vec<WithOrigin<Parsed<Entity>>>,
-        Vec<WithOrigin<Result<SlangFile>>>,
+        Vec<WithOrigin<Result<RuuLangFile>>>,
     ) {
         let mut entities = Vec::new();
         let mut files = Vec::new();
@@ -185,7 +185,7 @@ impl Workspace {
         for ((_, contents), (origin, _)) in file_data.iter().zip(file_data) {
             let parsed_contents = ParserStatement::parse(contents);
             match parsed_contents {
-                Err(e) => files.push(WithOrigin::new(Err(SlangError::from(e)), origin.clone())),
+                Err(e) => files.push(WithOrigin::new(Err(RuuLangError::from(e)), origin.clone())),
                 Ok(data) => {
                     let (schemata, rule) = data.assemble();
 
@@ -212,11 +212,11 @@ impl Workspace {
         self.source_files.get(path)
     }
 
-    pub fn resolve_schema(&self, path: &PathBuf) -> Option<&WithOrigin<Result<SlangFile>>> {
+    pub fn resolve_schema(&self, path: &PathBuf) -> Option<&WithOrigin<Result<RuuLangFile>>> {
         self.files.iter().find(|x| &x.origin == path)
     }
 
-    fn parse_file(&self, contents: &String) -> Result<(SlangSchema, SlangFile)> {
+    fn parse_file(&self, contents: &String) -> Result<(RuuLangSchema, RuuLangFile)> {
         let token_contents = ParserStatement::parse(from_utf8(contents.as_bytes()).unwrap())?;
         let (schemata, rule) = token_contents.assemble();
 
@@ -251,7 +251,7 @@ impl Workspace {
 
         let root = &self.config.workspace.root;
         let start_dir = root.to_owned().unwrap_or(self.working_dir.clone());
-        return gather_at(&start_dir, "slang").await;
+        return gather_at(&start_dir, "ruu").await;
     }
 
     async fn read_all(&self, files: &Vec<PathBuf>) -> HashMap<PathBuf, String> {
@@ -272,7 +272,7 @@ impl Workspace {
         result
     }
 
-    async fn compile_one(&self, schema: &WithOrigin<Result<SlangFile>>) -> Result<()> {
+    async fn compile_one(&self, schema: &WithOrigin<Result<RuuLangFile>>) -> Result<()> {
         if self.config.json.as_ref().map_or(false, |x| x.enabled) {
             self.compile_one_json(schema).await?;
         }
@@ -284,7 +284,7 @@ impl Workspace {
         Ok(())
     }
 
-    async fn compile_one_python(&self, schema: &WithOrigin<Result<SlangFile>>) -> Result<()> {
+    async fn compile_one_python(&self, schema: &WithOrigin<Result<RuuLangFile>>) -> Result<()> {
         let mut new_file = schema.origin.clone();
         new_file.set_extension("py");
 
@@ -303,7 +303,7 @@ impl Workspace {
         Ok(())
     }
 
-    async fn compile_one_json(&self, schema: &WithOrigin<Result<SlangFile>>) -> Result<()> {
+    async fn compile_one_json(&self, schema: &WithOrigin<Result<RuuLangFile>>) -> Result<()> {
         let mut new_file = schema.origin.clone();
         new_file.set_extension("json");
 

@@ -1,6 +1,8 @@
 from typing import Literal
-from slang_runtime import Attribute
-from slang_runtime import Rule
+
+from ruu_runtime import Attribute, Rule
+
+
 class CompanyMemberRule(Rule):
     relationship: Literal["member"]
     grants: tuple[Literal["write.basic", "read"]]

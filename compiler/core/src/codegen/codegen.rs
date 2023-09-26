@@ -4,11 +4,11 @@ use std::{
 };
 
 use crate::{
-    config::config::SlangConfig,
+    config::config::RuuLangConfig,
     parser::{
         parse_location::Parsed,
+        ruulang_ast::{Attribute, Entrypoint, Fragment, RuuLangFile},
         schema_ast::{Entity, Relationship},
-        slang_ast::{Attribute, Entrypoint, Fragment, SlangFile},
     },
     utils::with_origin::WithOrigin,
 };
@@ -102,11 +102,11 @@ where
     fn new(
         origin: &'a PathBuf,
         file_name: &'a PathBuf,
-        config: &'a SlangConfig,
+        config: &'a RuuLangConfig,
         entities: &'a Vec<WithOrigin<Parsed<Entity>>>,
-        file: &'a SlangFile,
+        file: &'a RuuLangFile,
     ) -> Self;
-    fn get_schema_and_file(&self) -> (&'a Vec<WithOrigin<Parsed<Entity>>>, &'a SlangFile);
+    fn get_schema_and_file(&self) -> (&'a Vec<WithOrigin<Parsed<Entity>>>, &'a RuuLangFile);
     fn get_origin(&self) -> &'a PathBuf;
 
     fn serialize_import(

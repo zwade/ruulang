@@ -1,14 +1,14 @@
 #[macro_use]
 extern crate lalrpop_util;
-lalrpop_mod!(pub slang, "/parser/slang.rs"); // synthesized by LALRPOP
+lalrpop_mod!(pub ruulang, "/parser/ruulang.rs"); // synthesized by LALRPOP
 
 pub mod parser {
     pub mod assembler;
     pub mod parse_location;
     pub mod parser_constructs;
     pub mod parser_utils;
+    pub mod ruulang_ast;
     pub mod schema_ast;
-    pub mod slang_ast;
 }
 
 pub mod config {

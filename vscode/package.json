@@ -1,26 +1,26 @@
 {
-    "name": "sec-lang-vscode",
-    "displayName": "slang Security Language",
-    "description": "Slang VSCode Syntax Highlighting",
+    "name": "ruulang-vscode",
+    "displayName": "RuuLang LSP",
+    "description": "RuuLang VSCode Syntax Highlighting",
     "publisher": "zwad3",
     "version": "0.0.1",
     "engines": {
         "vscode": "^1.34.1"
     },
     "activationEvents": [
-        "onLanguage:slang"
+        "onLanguage:ruulang"
     ],
     "main": "dist/extension.js",
     "contributes": {
         "languages": [
             {
-                "id": "slang",
+                "id": "ruulang",
                 "aliases": [
-                    "SLang",
-                    "Security Language"
+                    "RuuLang",
+                    "Ruu"
                 ],
                 "extensions": [
-                    ".slang"
+                    ".ruu"
                 ],
                 "configuration": "./language-configuration.json"
             }
@@ -28,12 +28,12 @@
         "commands": [
             {
                 "command": "extension.restart",
-                "title": "Restart Slang Language Server"
+                "title": "Restart RuuLang Language Server"
             }
         ],
         "configuration": {
             "type": "object",
-            "title": "Slang Configuration",
+            "title": "RuuLang Configuration",
             "properties": {
                 "languageServerExample.trace.server": {
                     "scope": "window",
@@ -50,15 +50,15 @@
         },
         "grammars": [
             {
-                "language": "slang",
-                "scopeName": "source.slang",
-                "path": "./syntaxes/slang.tmLanguage.json"
+                "language": "ruulang",
+                "scopeName": "source.ruulang",
+                "path": "./syntaxes/ruulang.tmLanguage.json"
             }
         ]
     },
     "scripts": {
         "vscode:prepublish": "yarn build",
-        "build": "cp ../compiler/target/release/slang-server ./bin/ && esbuild --bundle --outfile=dist/extension.js --external:vscode --platform=node --format=cjs ./src/extension.ts",
+        "build": "cp ../compiler/target/release/ruulang-server ./bin/ && cp ../compiler/target/debug/ruulang-server ./bin/ruulang-server-debug && esbuild --bundle --outfile=dist/extension.js --external:vscode --platform=node --format=cjs ./src/extension.ts",
         "vscode-package": "pwd && yarn build && vsce package",
         "watch": "tsc -w"
     },

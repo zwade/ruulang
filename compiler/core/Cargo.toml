@@ -1,5 +1,5 @@
 [package]
-name = "slang_core"
+name = "ruulang_core"
 version = "0.1.0"
 edition = "2021"
 

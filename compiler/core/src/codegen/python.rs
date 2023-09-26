@@ -1,11 +1,11 @@
 use std::{collections::HashMap, path::PathBuf};
 
 use crate::{
-    config::config::SlangConfig,
+    config::config::RuuLangConfig,
     parser::{
         parse_location::Parsed,
+        ruulang_ast::{Attribute, Entrypoint, Fragment, RuuLangFile},
         schema_ast::{Entity, Relationship},
-        slang_ast::{Attribute, Entrypoint, Fragment, SlangFile},
     },
     utils::with_origin::WithOrigin,
 };
@@ -57,8 +57,8 @@ pub struct PythonCodegen<'a> {
     origin: &'a PathBuf,
     file_name: &'a PathBuf,
     entities: &'a Vec<WithOrigin<Parsed<Entity>>>,
-    config: &'a SlangConfig,
-    file: &'a SlangFile,
+    config: &'a RuuLangConfig,
+    file: &'a RuuLangFile,
 }
 
 impl<'a> PythonCodegen<'a> {
@@ -71,9 +71,9 @@ impl<'a> Codegen<'a, PythonImport> for PythonCodegen<'a> {
     fn new(
         origin: &'a PathBuf,
         file_name: &'a PathBuf,
-        config: &'a SlangConfig,
+        config: &'a RuuLangConfig,
         entities: &'a Vec<WithOrigin<Parsed<Entity>>>,
-        file: &'a SlangFile,
+        file: &'a RuuLangFile,
     ) -> Self {
         Self {
             origin,
@@ -84,7 +84,7 @@ impl<'a> Codegen<'a, PythonImport> for PythonCodegen<'a> {
         }
     }
 
-    fn get_schema_and_file(&self) -> (&'a Vec<WithOrigin<Parsed<Entity>>>, &'a SlangFile) {
+    fn get_schema_and_file(&self) -> (&'a Vec<WithOrigin<Parsed<Entity>>>, &'a RuuLangFile) {
         (self.entities, self.file)
     }
 
@@ -169,8 +169,8 @@ impl<'a> Codegen<'a, PythonImport> for PythonCodegen<'a> {
         });
 
         let mut state = CodegenState::new();
-        state.add_import(PythonImport::new_global("slang_runtime", "Attribute"));
-        state.add_import(PythonImport::new_global("slang_runtime", "registry"));
+        state.add_import(PythonImport::new_global("ruu_runtime", "Attribute"));
+        state.add_import(PythonImport::new_global("ruu_runtime", "registry"));
         state.add_import(PythonImport::new_global("typing", "Literal"));
         state.write_code(s.serialize());
         Some(state)
@@ -275,9 +275,9 @@ impl<'a> Codegen<'a, PythonImport> for PythonCodegen<'a> {
             s.write_line(None);
         });
 
-        state.add_import(PythonImport::new_global("slang_runtime", "Rule"));
-        state.add_import(PythonImport::new_global("slang_runtime", "Universal"));
-        state.add_import(PythonImport::new_global("slang_runtime", "registry"));
+        state.add_import(PythonImport::new_global("ruu_runtime", "Rule"));
+        state.add_import(PythonImport::new_global("ruu_runtime", "Universal"));
+        state.add_import(PythonImport::new_global("ruu_runtime", "registry"));
         state.add_import(PythonImport::new_global("typing", "Literal"));
         state.write_code(s.serialize());
         Some(state)
@@ -323,7 +323,7 @@ impl<'a> Codegen<'a, PythonImport> for PythonCodegen<'a> {
 
         let mut state = CodegenState::new();
         state.write_code(s.serialize());
-        state.add_import(PythonImport::new_global("slang_runtime", "Fragment"));
+        state.add_import(PythonImport::new_global("ruu_runtime", "Fragment"));
         state.add_import(PythonImport::new_global("typing", "Literal"));
 
         Some(state)
@@ -367,8 +367,8 @@ impl<'a> Codegen<'a, PythonImport> for PythonCodegen<'a> {
         });
 
         state.write_code(s.serialize());
-        state.add_import(PythonImport::new_global("slang_runtime", "Entrypoint"));
-        state.add_import(PythonImport::new_global("slang_runtime", "registry"));
+        state.add_import(PythonImport::new_global("ruu_runtime", "Entrypoint"));
+        state.add_import(PythonImport::new_global("ruu_runtime", "registry"));
         state.add_import(PythonImport::new_global("typing", "Literal"));
 
         Some(state)
@@ -448,8 +448,8 @@ impl<'a> Codegen<'a, PythonImport> for PythonCodegen<'a> {
 
         let mut state = CodegenState::new();
         state.write_code(s.serialize());
-        state.add_import(PythonImport::new_global("slang_runtime", "Schema"));
-        state.add_import(PythonImport::new_global("slang_runtime", "registry"));
+        state.add_import(PythonImport::new_global("ruu_runtime", "Schema"));
+        state.add_import(PythonImport::new_global("ruu_runtime", "registry"));
         state.add_import(PythonImport::new_global_module("json"));
 
         Some(state)

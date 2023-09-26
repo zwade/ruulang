@@ -2,10 +2,10 @@ use lalrpop_util::{lexer::Token, ParseError};
 
 use super::{
     parse_location::Parsed,
+    ruulang_ast::{Entrypoint, Fragment},
     schema_ast::Entity,
-    slang_ast::{Entrypoint, Fragment},
 };
-use crate::slang::TermParser;
+use crate::ruulang::TermParser;
 
 pub enum ParserStatement {
     Comment(String),

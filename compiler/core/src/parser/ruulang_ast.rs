@@ -4,8 +4,8 @@ use serde::{Deserialize, Serialize};
 
 use super::parse_location::Parsed;
 
-pub trait SlangSerialize {
-    fn slang_serialize(&self, indent: usize) -> String;
+pub trait RuuLangSerialize {
+    fn ruulang_serialize(&self, indent: usize) -> String;
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -21,8 +21,8 @@ impl Hash for Attribute {
     }
 }
 
-impl SlangSerialize for Attribute {
-    fn slang_serialize(&self, _indent: usize) -> String {
+impl RuuLangSerialize for Attribute {
+    fn ruulang_serialize(&self, _indent: usize) -> String {
         let mut result = String::new();
 
         result.push_str(format!(":{}", self.name).as_str());
@@ -68,8 +68,8 @@ impl Hash for Rule {
     }
 }
 
-impl SlangSerialize for Rule {
-    fn slang_serialize(&self, indent: usize) -> String {
+impl RuuLangSerialize for Rule {
+    fn ruulang_serialize(&self, indent: usize) -> String {
         if self.relationship == "*" {
             return format!("{}*\n", " ".repeat(indent * 4));
         }
@@ -80,7 +80,7 @@ impl SlangSerialize for Rule {
 
         if self.attributes.len() > 0 {
             for attr in self.attributes.iter() {
-                result.push_str(attr.data.slang_serialize(indent + 1).as_str());
+                result.push_str(attr.data.ruulang_serialize(indent + 1).as_str());
             }
         }
 
@@ -116,7 +116,7 @@ impl SlangSerialize for Rule {
             result.push_str("\n");
 
             for (i, rule) in self.rules.iter().enumerate() {
-                result.push_str(rule.data.slang_serialize(indent + 1).as_str());
+                result.push_str(rule.data.ruulang_serialize(indent + 1).as_str());
 
                 if i < self.rules.len() - 1 {
                     result.push_str("\n");
@@ -142,14 +142,14 @@ impl Hash for Entrypoint {
     }
 }
 
-impl SlangSerialize for Entrypoint {
-    fn slang_serialize(&self, indent: usize) -> String {
+impl RuuLangSerialize for Entrypoint {
+    fn ruulang_serialize(&self, indent: usize) -> String {
         let mut result = String::new();
 
         result.push_str(format!("{}@{} {{\n", " ".repeat(indent * 4), self.entrypoint).as_str());
 
         for (i, rule) in self.rules.iter().enumerate() {
-            result.push_str(rule.data.slang_serialize(indent + 1).as_str());
+            result.push_str(rule.data.ruulang_serialize(indent + 1).as_str());
 
             if i < self.rules.len() - 1 {
                 result.push_str("\n");
@@ -176,8 +176,8 @@ impl Hash for Fragment {
     }
 }
 
-impl SlangSerialize for Fragment {
-    fn slang_serialize(&self, indent: usize) -> String {
+impl RuuLangSerialize for Fragment {
+    fn ruulang_serialize(&self, indent: usize) -> String {
         let mut result = String::new();
 
         result.push_str(format!("{}fragment {} {{", " ".repeat(indent * 4), self.name).as_str());
@@ -197,7 +197,7 @@ impl SlangSerialize for Fragment {
             result.push_str("\n");
 
             for (i, rule) in self.rules.iter().enumerate() {
-                result.push_str(rule.data.slang_serialize(indent + 1).as_str());
+                result.push_str(rule.data.ruulang_serialize(indent + 1).as_str());
 
                 if i < self.rules.len() - 1 {
                     result.push_str("\n");
@@ -211,25 +211,25 @@ impl SlangSerialize for Fragment {
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-pub struct SlangFile {
+pub struct RuuLangFile {
     pub entrypoints: Vec<Parsed<Entrypoint>>,
 
     #[serde(skip_serializing_if = "Vec::is_empty", default)]
     pub fragments: Vec<Parsed<Fragment>>,
 }
 
-impl Hash for SlangFile {
+impl Hash for RuuLangFile {
     fn hash<H: Hasher>(&self, state: &mut H) {
         self.entrypoints.hash(state);
     }
 }
 
-impl SlangSerialize for SlangFile {
-    fn slang_serialize(&self, indent: usize) -> String {
+impl RuuLangSerialize for RuuLangFile {
+    fn ruulang_serialize(&self, indent: usize) -> String {
         let mut result = String::new();
 
         for fragment in self.fragments.iter() {
-            result.push_str(fragment.data.slang_serialize(indent).as_str());
+            result.push_str(fragment.data.ruulang_serialize(indent).as_str());
             result.push_str("\n");
         }
 
@@ -238,7 +238,7 @@ impl SlangSerialize for SlangFile {
         }
 
         for (i, entrypoint) in self.entrypoints.iter().enumerate() {
-            result.push_str(entrypoint.data.slang_serialize(indent).as_str());
+            result.push_str(entrypoint.data.ruulang_serialize(indent).as_str());
             result.push_str("\n");
 
             if i < self.entrypoints.len() - 1 {

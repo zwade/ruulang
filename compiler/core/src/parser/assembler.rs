@@ -1,11 +1,13 @@
-use super::{parser_constructs::ParserStatement, schema_ast::SlangSchema, slang_ast::SlangFile};
+use super::{
+    parser_constructs::ParserStatement, ruulang_ast::RuuLangFile, schema_ast::RuuLangSchema,
+};
 
 pub trait ParserAssemble {
-    fn assemble(&self) -> (SlangSchema, SlangFile);
+    fn assemble(&self) -> (RuuLangSchema, RuuLangFile);
 }
 
 impl ParserAssemble for Vec<ParserStatement> {
-    fn assemble(&self) -> (SlangSchema, SlangFile) {
+    fn assemble(&self) -> (RuuLangSchema, RuuLangFile) {
         let mut fragments = Vec::new();
         let mut entrypoints = Vec::new();
         let mut entities = Vec::new();
@@ -25,8 +27,8 @@ impl ParserAssemble for Vec<ParserStatement> {
             }
         }
 
-        let schema = SlangSchema { entities };
-        let file = SlangFile {
+        let schema = RuuLangSchema { entities };
+        let file = RuuLangFile {
             entrypoints,
             fragments,
         };
