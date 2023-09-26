@@ -1,7 +1,7 @@
 use std::env;
 use std::io::Read;
 
-use slang_core::parser::parser_constructs::ParserAssemble;
+use slang_core::parser::assembler::ParserAssemble;
 use slang_core::slang::TermParser;
 
 fn main() {
@@ -20,7 +20,10 @@ fn main() {
         std::fs::read_to_string(&args[1]).unwrap()
     };
 
-    let parsed = TermParser::new().parse(contents.as_str()).unwrap().assemble();
+    let parsed = TermParser::new()
+        .parse(contents.as_str())
+        .unwrap()
+        .assemble();
 
     let as_yaml = serde_yaml::to_string(&parsed).unwrap();
     print!("{}", as_yaml);

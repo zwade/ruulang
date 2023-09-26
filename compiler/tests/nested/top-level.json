@@ -1,0 +1,78 @@
+{
+  "entrypoints": [
+    {
+      "entrypoint": "User",
+      "rules": [
+        {
+          "relationship": "company",
+          "attributes": [],
+          "grants": [
+            [
+              "read"
+            ]
+          ],
+          "rules": [
+            {
+              "relationship": "member",
+              "attributes": [],
+              "grants": [],
+              "rules": [],
+              "recursive": false,
+              "include_fragments": [
+                "BasicData"
+              ]
+            }
+          ],
+          "recursive": false,
+          "include_fragments": [
+            "BasicData"
+          ]
+        }
+      ]
+    }
+  ],
+  "fragments": [
+    {
+      "name": "BasicData",
+      "for_entity": "Company",
+      "rules": [
+        {
+          "relationship": "member",
+          "attributes": [],
+          "grants": [],
+          "rules": [],
+          "recursive": false,
+          "include_fragments": [
+            "BasicData"
+          ]
+        }
+      ],
+      "grants": [
+        [
+          "read"
+        ]
+      ]
+    },
+    {
+      "name": "BasicData",
+      "for_entity": "User",
+      "rules": [
+        {
+          "relationship": "company",
+          "attributes": [],
+          "grants": [],
+          "rules": [],
+          "recursive": false,
+          "include_fragments": [
+            "BasicData"
+          ]
+        }
+      ],
+      "grants": [
+        [
+          "read"
+        ]
+      ]
+    }
+  ]
+}

@@ -5,28 +5,69 @@
     "publisher": "zwad3",
     "version": "0.0.1",
     "engines": {
-        "vscode": "^1.34.0"
+        "vscode": "^1.34.1"
     },
     "activationEvents": [
         "onLanguage:slang"
     ],
-    "main": "extension.js",
+    "main": "dist/extension.js",
     "contributes": {
-        "languages": [{
-            "id": "slang",
-            "aliases": [
-                "SLang",
-                "Security Language"
-            ],
-            "extensions": [
-                ".slang"
-            ],
-            "configuration": "./language-configuration.json"
-        }],
-        "grammars": [{
-            "language": "slang",
-            "scopeName": "source.slang",
-            "path": "./syntaxes/slang.tmLanguage.json"
-        }]
-    }
+        "languages": [
+            {
+                "id": "slang",
+                "aliases": [
+                    "SLang",
+                    "Security Language"
+                ],
+                "extensions": [
+                    ".slang"
+                ],
+                "configuration": "./language-configuration.json"
+            }
+        ],
+        "commands": [
+            {
+                "command": "extension.restart",
+                "title": "Restart Slang Language Server"
+            }
+        ],
+        "configuration": {
+            "type": "object",
+            "title": "Slang Configuration",
+            "properties": {
+                "languageServerExample.trace.server": {
+                    "scope": "window",
+                    "type": "string",
+                    "enum": [
+                        "off",
+                        "messages",
+                        "verbose"
+                    ],
+                    "default": "off",
+                    "description": "Traces the communication between VS Code and the language server."
+                }
+            }
+        },
+        "grammars": [
+            {
+                "language": "slang",
+                "scopeName": "source.slang",
+                "path": "./syntaxes/slang.tmLanguage.json"
+            }
+        ]
+    },
+    "scripts": {
+        "vscode:prepublish": "yarn build",
+        "build": "cp ../compiler/target/release/slang-server ./bin/ && esbuild --bundle --outfile=dist/extension.js --external:vscode --platform=node --format=cjs ./src/extension.ts",
+        "vscode-package": "pwd && yarn build && vsce package",
+        "watch": "tsc -w"
+    },
+    "devDependencies": {
+        "@types/node": "^20.3.1",
+        "@types/vscode": "^1.34.1",
+        "esbuild": "^0.18.6",
+        "typescript": "^5.1.3",
+        "vscode-languageclient": "^8.1.0"
+    },
+    "packageManager": "yarn@3.6.0"
 }

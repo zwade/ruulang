@@ -1,13 +1,7 @@
 {
     "scopeName": "source.slang",
     "patterns": [{
-        "include": "#fragment"
-    }, {
-        "include": "#entrypoint"
-    }, {
-        "include": "#line-comment"
-    }, {
-        "include": "#block-comment"
+        "include": "#expression"
     }],
     "repository": {
         "line-comment": {
@@ -23,48 +17,63 @@
         },
 
         "fragment": {
-            "begin": "(fragment)\\s+([a-zA-Z0-9-_]+)\\s*(\\{)",
-            "end": "\\}",
-            "beginCaptures": {
+            "match": "(fragment)\\s+([a-zA-Z0-9-_]+)\\s*",
+            "captures": {
                 "1": {
                     "name": "keyword.control"
                 },
                 "2": {
                     "name": "other"
-                },
-                "3": {
-                    "name": "punctuation.brace.open"
                 }
-            },
-            "endCaptures": {
-                "0": {
-                    "name": "punctuation.brace.close"
-                }
-            },
-            "patterns": [{
-                "include": "#expression"
-            }]
+            }
         },
 
-        "entrypoint": {
-            "begin": "(@[a-zA-Z0-9-_]+)\\s*(\\{)",
-            "end": "\\}",
-            "beginCaptures": {
+        "for_entity": {
+            "match": "(for)\\s+([a-zA-Z0-9-_]+)\\s*",
+            "captures": {
                 "1": {
                     "name": "keyword.control"
                 },
                 "2": {
-                    "name": "puncutation.brace.open"
+                    "name": "other"
                 }
-            },
-            "endCaptures": {
-                "0": {
-                    "name": "puncutation.brace.close"
+            }
+        },
+
+        "entity": {
+            "match": "(entity)\\s+([a-zA-Z0-9-_]+)\\s*",
+            "captures": {
+                "1": {
+                    "name": "keyword.control"
+                },
+                "2": {
+                    "name": "other"
                 }
-            },
-            "patterns": [{
-                "include": "#expression"
-            }]
+            }
+        },
+
+        "relationship": {
+            "match": "(->)\\s*([a-zA-Z0-9-_]+)(;)",
+            "captures": {
+                "1": {
+                    "name": "keyword.operator.arrow"
+                },
+                "2": {
+                    "name": "entity.name.destination"
+                },
+                "3": {
+                    "name": "punctuation.terminator"
+                }
+            }
+        },
+
+        "entrypoint": {
+            "match": "(@[a-zA-Z0-9-_]+)\\s*",
+            "captures": {
+                "1": {
+                    "name": "keyword.control"
+                }
+            }
         },
 
         "grant": {
@@ -89,15 +98,6 @@
                     "name": "punctuation.terminator"
                 }
             }
-        },
-
-        "rule": {
-            "begin": "[a-zA-Z0-9-_]+\\s*(?![a-zA-Z0-9-_\\.;])",
-            "end": "(?={)",
-            "name": "other",
-            "patterns": [{
-                "include": "#attribute"
-            }]
         },
 
         "attribute": {
@@ -165,8 +165,15 @@
         },
 
         "expression": {
-            "patterns": [{
-                    "include": "#rule"
+            "patterns": [
+                {
+                    "include": "#fragment"
+                },
+                {
+                    "include": "#for_entity"
+                },
+                {
+                    "include": "#entrypoint"
                 },
                 {
                     "include": "#rule-group"
@@ -178,6 +185,12 @@
                     "include": "#grant"
                 },
                 {
+                    "include": "#entity"
+                },
+                {
+                    "include": "#relationship"
+                },
+                {
                     "include": "#include-fragment"
                 },
                 {
@@ -185,6 +198,9 @@
                 },
                 {
                     "include": "#block-comment"
+                },
+                {
+                    "include": "#attribute"
                 }
             ]
         }

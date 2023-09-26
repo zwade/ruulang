@@ -1,96 +1,140 @@
-{
-  "entrypoints": [
-    {
-      "entrypoint": "user",
-      "rules": [
-        {
-          "relationship": "personnel",
-          "attributes": [
-            {
-              "name": "is-admin",
-              "arguments": []
-            }
-          ],
-          "grants": [
-            [
-              "read",
-              "basic"
+[
+  {
+    "entities": [
+      {
+        "name": "user",
+        "relationships": [
+          {
+            "relationship_name": "personnel",
+            "entity_name": "company",
+            "attributes": [
+              {
+                "name": "is-rule",
+                "arguments": []
+              },
+              {
+                "name": "is-admin",
+                "arguments": [
+                  "one",
+                  "two"
+                ]
+              }
+            ]
+          }
+        ],
+        "grants": []
+      }
+    ]
+  },
+  {
+    "entrypoints": [
+      {
+        "entrypoint": "user",
+        "rules": [
+          {
+            "relationship": "personnel",
+            "attributes": [
+              {
+                "name": "is-admin",
+                "arguments": []
+              }
             ],
-            [
-              "write"
-            ]
-          ],
-          "rules": [
-            {
-              "relationship": "supplier-app",
-              "attributes": [],
-              "grants": [],
-              "rules": [],
-              "recursive": false,
-              "include_fragments": [
-                "credit-app"
+            "grants": [
+              [
+                "read",
+                "basic"
+              ],
+              [
+                "write"
               ]
-            }
-          ],
-          "recursive": false
-        }
-      ]
-    }
-  ],
-  "fragments": [
-    {
-      "name": "credit-app",
-      "rules": [
-        {
-          "relationship": "supplier",
-          "attributes": [],
-          "grants": [
-            [
-              "read"
-            ]
-          ],
-          "rules": [
-            {
-              "relationship": "supplier-app",
-              "attributes": [],
-              "grants": [],
-              "rules": [],
-              "recursive": false,
-              "include_fragments": [
-                "credit-app"
-              ]
-            }
-          ],
-          "recursive": false
-        },
-        {
-          "relationship": "customer",
-          "attributes": [],
-          "grants": [
-            [
-              "read"
-            ]
-          ],
-          "rules": [
-            {
-              "relationship": "customer-app",
-              "attributes": [],
-              "grants": [],
-              "rules": [],
-              "recursive": false,
-              "include_fragments": [
-                "credit-app"
-              ]
-            }
-          ],
-          "recursive": false
-        }
-      ],
-      "grants": [
-        [
-          "read"
+            ],
+            "rules": [
+              {
+                "relationship": "supplier-app",
+                "attributes": [],
+                "grants": [],
+                "rules": [],
+                "recursive": false,
+                "include_fragments": [
+                  "credit-app"
+                ]
+              }
+            ],
+            "recursive": false
+          }
         ]
-      ]
-    }
-  ]
-}
+      }
+    ],
+    "fragments": [
+      {
+        "name": "credit-app",
+        "rules": [
+          {
+            "relationship": "supplier",
+            "attributes": [],
+            "grants": [
+              [
+                "read"
+              ]
+            ],
+            "rules": [
+              {
+                "relationship": "supplier-app",
+                "attributes": [],
+                "grants": [],
+                "rules": [],
+                "recursive": false,
+                "include_fragments": [
+                  "credit-app"
+                ]
+              }
+            ],
+            "recursive": false
+          },
+          {
+            "relationship": "customer",
+            "attributes": [
+              {
+                "name": "has-test",
+                "arguments": [
+                  "first",
+                  "second"
+                ]
+              },
+              {
+                "name": "has-another-test",
+                "arguments": [
+                  "third",
+                  "fourth"
+                ]
+              }
+            ],
+            "grants": [
+              [
+                "read"
+              ]
+            ],
+            "rules": [
+              {
+                "relationship": "customer-app",
+                "attributes": [],
+                "grants": [],
+                "rules": [],
+                "recursive": false,
+                "include_fragments": [
+                  "credit-app"
+                ]
+              }
+            ],
+            "recursive": false
+          }
+        ],
+        "grants": [
+          [
+            "read"
+          ]
+        ]
+      }
+    ]
+  }
+]

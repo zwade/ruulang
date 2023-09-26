@@ -1,13 +1,16 @@
 use crate::parser::{
     slang_ast::{Rule, Attribute, Entrypoint, Fragment},
-    parser_constructs::{ParserStatement}
+    parser_constructs::ParserStatement,
+    parse_location::Parsed,
+    schema_ast::{Entity, Relationship},
+    parser_utils::parse_docstrings
 };
 
 grammar;
 
 match {
-    r"//[^\n\r]*[\n\r]*" => { },
-    r"/\*[^*]*\*+(?:[^/*][^*]*\*+)*/" => { },
+    r"//[^\n\r]*[\n\r]*" => LineComment,
+    r"/\*[^*]*\*+(?:[^/*][^*]*\*+)*/" => BlockComment,
 } else {
     r"\s*" => { },
     _ // Everything else
@@ -18,54 +21,256 @@ pub Term: Vec<ParserStatement> = {
 };
 
 pub Entry: ParserStatement = {
-    <f:Frag> => ParserStatement::Fragment(f),
-    "@" <s:Symbol> "{" <r: (<Rule>)*> "}" => ParserStatement::Entrypoint(
-        Entrypoint { entrypoint: s, rules: r }
-    ),
+    <f:CommentedFrag> => ParserStatement::Fragment(f),
+    <e:CommentedEntrypoint> => ParserStatement::Entrypoint(e),
+    <e:CommentedEntity> => ParserStatement::Entity(e),
 }
 
-pub Frag: Fragment = {
-    "fragment" <s:Symbol> "{" <r: (<Grant> ";")*> <c: (<Rule>)*> "}" => Fragment { name: s, grants: r, rules: c },
-}
-
-pub Rel: Rule = {
-    <s:Symbol> <a: (<Attr>)*> "{" <r: (<Grant> ";")*> <f: ("#" <Symbol> ";")*> <c: (<Rule>)*> "}" => Rule { relationship: s, attributes: a, grants: r, rules: c, include_fragments: f, recursive: false },
-}
-
-pub Uni: Rule = {
-    <s:Symbol> <a: (<Attr>)*> "{" "*" "}" => Rule {
-        relationship: s,
-        attributes: a,
-        grants: vec![vec!["read".to_string()], vec!["write".to_string()]],
-        rules: vec![Rule {
-            relationship: "*".to_string(),
-            attributes: vec![],
-            grants: vec![vec!["read".to_string()], vec!["write".to_string()]],
-            rules: vec![],
-            recursive: true,
-            include_fragments: vec![],
-        }],
-        include_fragments: vec![],
-        recursive: false,
+pub Entrypoint: Parsed<Entrypoint> = {
+    <l:@L>
+        "@" <s:Symbol> "{"
+            <rs: (<CommentedRule>)*>
+            (<Comment>)*
+        "}"
+    <r:@R> => Parsed {
+        loc: Some((l, r)),
+        docstring: None,
+        file_name: None,
+        data: Entrypoint {
+            entrypoint: s,
+            rules: rs
+        }
     }
 }
 
-pub Rule: Rule = {
+pub CommentedEntrypoint: Parsed<Entrypoint> = {
+    <c: (<Comment>)*> <e: Entrypoint> => e.into_with_docstring(parse_docstrings(c)).0
+}
+
+pub Frag: Parsed<Fragment> = {
+    <l:@L>
+        "fragment" <s:Symbol> "for" <e:Symbol> "{"
+            <g: (<CommentedGrant>)*>
+            <c: (<CommentedRule>)*>
+        "}"
+    <r:@R> => Parsed {
+        loc: Some((l, r)),
+        docstring: None,
+        file_name: None,
+        data: Fragment {
+            name: s,
+            for_entity: e,
+            grants: g,
+            rules: c,
+        },
+    }
+}
+
+pub CommentedFrag: Parsed<Fragment> = {
+    <c: (<Comment>)*> <f: Frag> => f.into_with_docstring(parse_docstrings(c)).0
+}
+
+pub Rel: Parsed<Rule> = {
+    <l:@L>
+        <s:Symbol> <a: (<CommentedAttr>)*> "{"
+            <g: (<CommentedGrant>)*>
+            <f: (<CommentedFragmentInclude>)*>
+            <c: (<CommentedRule>)*>
+        "}"
+    <r:@R> => Parsed {
+        loc: Some((l, r)),
+        docstring: None,
+        file_name: None,
+        data: Rule {
+            relationship: s,
+            attributes: a,
+            grants: g,
+            rules: c,
+            include_fragments: f,
+            recursive: false,
+        },
+    }
+}
+
+pub Uni: Parsed<Rule> = {
+    <l1:@L>
+        <s:Symbol> <a: (<CommentedAttr>)*> "{"
+            <l2:@L>
+                "*"
+            <r2:@R>
+        "}"
+    <r1:@R> => Parsed {
+        loc: Some((l1, r1)),
+        docstring: None,
+        file_name: None,
+        data: Rule {
+            relationship: s,
+            attributes: a,
+            grants: vec![
+                Parsed {
+                    loc: None,
+                    docstring: None,
+                    file_name: None,
+                    data: vec!["read".to_string()]
+                },
+                Parsed {
+                    loc: None,
+                    docstring: None,
+                    file_name: None,
+                    data: vec!["write".to_string()]
+                },
+            ],
+            rules: vec![Parsed {
+                loc: Some((l2, r2)),
+                docstring: None,
+                file_name: None,
+                data: Rule {
+                    relationship: "*".to_string(),
+                    attributes: vec![],
+                    grants: vec![
+                        Parsed {
+                            loc: None,
+                            docstring: None,
+                            file_name: None,
+                            data: vec!["read".to_string()]
+                        },
+                        Parsed {
+                            loc: None,
+                            docstring: None,
+                            file_name: None,
+                            data: vec!["write".to_string()]
+                        },
+                    ],
+                    rules: vec![],
+                    recursive: true,
+                    include_fragments: vec![],
+                }
+            }],
+            include_fragments: vec![],
+            recursive: false,
+        }
+    }
+}
+
+pub Rule: Parsed<Rule> = {
     <r: Rel> => r,
     <u: Uni> => u,
 }
 
-pub Attr: Attribute = {
-    ":" <s:Symbol> "(" <a: (<Symbol>)*> ")" => Attribute { name: s, arguments: a },
-    ":" <s:Symbol> => Attribute { name: s, arguments: vec![] },
+pub CommentedRule: Parsed<Rule> = {
+    <c: (<Comment>)*> <r: Rule> => r.into_with_docstring(parse_docstrings(c)).0
 }
 
-pub Grant: Vec<String> = {
-    <s: Symbol> <sp: ("." <Symbol>)*> => {
+pub Attr: Parsed<Attribute> = {
+    <l:@L>
+        ":" <s:Symbol> "(" <a: (<Symbol>)*> ")"
+    <r:@R> => Parsed {
+        loc: Some((l, r)),
+        docstring: None,
+        file_name: None,
+        data: Attribute {
+            name: s,
+            arguments: a,
+        },
+    },
+    <l:@L>
+        ":" <s:Symbol>
+    <r:@R> => Parsed {
+        loc: Some((l, r)),
+        docstring: None,
+        file_name: None,
+        data: Attribute {
+            name: s,
+            arguments: vec![],
+        },
+    },
+}
+
+pub CommentedAttr: Parsed<Attribute> = {
+    <c: (<Comment>)*> <r: Attr> => r.into_with_docstring(parse_docstrings(c)).0
+}
+
+pub Grant: Parsed<Vec<String>> = {
+    <l:@L>
+        <s: Symbol> <sp: ("." <Symbol>)*> ";"
+    <r:@R> => {
         let mut vec = vec![s];
         vec.extend(sp);
-        vec
+        Parsed {
+            loc: Some((l, r)),
+            docstring: None,
+            file_name: None,
+            data: vec
+        }
     }
 }
 
-Symbol: String = <s:r"[a-zA-Z][a-zA-Z0-9-_]*"> => s.to_string();
+pub CommentedGrant: Parsed<Vec<String>> = {
+    <c: (<Comment>)*> <g: Grant> => g.into_with_docstring(parse_docstrings(c)).0
+}
+
+pub FragmentInclude: Parsed<String> = {
+    <l:@L>
+        "#" <f: Symbol> ";"
+    <r:@R> => Parsed {
+        loc: Some((l, r)),
+        docstring: None,
+        file_name: None,
+        data: f
+    }
+}
+
+pub CommentedFragmentInclude: Parsed<String> = {
+    <c: (<Comment>)*> <f: FragmentInclude> => f.into_with_docstring(parse_docstrings(c)).0
+}
+
+
+pub Entity: Parsed<Entity> = {
+    <l:@L>
+        "entity" <e: Symbol> "{"
+            <g: (<CommentedGrant>)*>
+            <rs: (<CommentedRelationship>)*>
+        "}"
+    <r:@R> => Parsed {
+        loc: Some((l, r)),
+        docstring: None,
+        file_name: None,
+        data: Entity {
+            name: e.to_string(),
+            grants: g,
+            relationships: rs,
+        }
+    }
+}
+
+pub CommentedEntity: Parsed<Entity> = {
+    <c: (<Comment>)*> <e: Entity> => e.into_with_docstring(parse_docstrings(c)).0
+}
+
+pub Relationship: Parsed<Relationship> = {
+    <l:@L>
+        <rel: Symbol>
+            <a: (<CommentedAttr>)*>
+            "->" <entity: Symbol> ";"
+    <r:@R> => Parsed {
+        loc: Some((l, r)),
+        docstring: None,
+        file_name: None,
+        data: Relationship {
+            relationship_name: rel,
+            entity_name: entity,
+            attributes: a,
+        }
+    }
+}
+
+pub CommentedRelationship: Parsed<Relationship> = {
+    <c: (<Comment>)*> <r: Relationship> => r.into_with_docstring(parse_docstrings(c)).0
+}
+
+Symbol: String = <s:r"[a-zA-Z][a-zA-Z0-9-_]*|\*"> => s.to_string();
+
+Comment: String = {
+    <c: LineComment> => c.to_string(),
+    <c: BlockComment> => c.to_string(),
+}

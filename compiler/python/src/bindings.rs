@@ -5,7 +5,10 @@ use std::{
 
 use pyo3::{pyclass, pymethods, types::PyDict, Python};
 use serde::{Deserialize, Serialize};
-use slang_core::parser::slang_ast::{Attribute, Entrypoint, Rule, SlangFile, SlangSerialize, Fragment};
+use slang_core::parser::{
+    parse_location::Parsed,
+    slang_ast::{Attribute, Entrypoint, Fragment, Rule, SlangFile, SlangSerialize},
+};
 
 trait AsDict {
     fn as_dict<'a>(&self, py: Python<'a>) -> &'a PyDict;
@@ -29,16 +32,23 @@ impl AsDict for Rule {
             "attributes",
             self.attributes
                 .iter()
-                .map(|attr| attr.as_dict(py))
+                .map(|attr| attr.data.as_dict(py))
                 .collect::<Vec<_>>(),
         )
         .unwrap();
-        dict.set_item("grants", self.grants.clone()).unwrap();
+        dict.set_item(
+            "grants",
+            self.grants
+                .iter()
+                .map(|grant| grant.data.clone())
+                .collect::<Vec<_>>(),
+        )
+        .unwrap();
         dict.set_item(
             "rules",
             self.rules
                 .iter()
-                .map(|rule| rule.as_dict(py))
+                .map(|rule| rule.data.as_dict(py))
                 .collect::<Vec<_>>(),
         )
         .unwrap();
@@ -56,7 +66,7 @@ impl AsDict for Entrypoint {
             "rules",
             self.rules
                 .iter()
-                .map(|rule| rule.as_dict(py))
+                .map(|rule| rule.data.as_dict(py))
                 .collect::<Vec<_>>(),
         )
         .unwrap();
@@ -71,7 +81,7 @@ impl AsDict for SlangFile {
             "entrypoints",
             self.entrypoints
                 .iter()
-                .map(|entrypoint| entrypoint.as_dict(py))
+                .map(|entrypoint| entrypoint.data.as_dict(py))
                 .collect::<Vec<_>>(),
         )
         .unwrap();
@@ -129,7 +139,7 @@ pub struct PyRule {
 #[pymethods]
 impl PyRule {
     #[new]
-    #[args(include_fragments="Vec::new()")]
+    #[args(include_fragments = "Vec::new()")]
     fn new(
         relationship: String,
         attributes: Vec<PyAttribute>,
@@ -143,15 +153,37 @@ impl PyRule {
                 relationship,
                 attributes: attributes
                     .iter()
-                    .map(|attr| attr.attribute.clone())
+                    .map(|attr| Parsed {
+                        loc: None,
+                        docstring: None,
+                        data: attr.attribute.clone(),
+                    })
                     .collect::<Vec<_>>(),
-                grants,
+                grants: grants
+                    .iter()
+                    .map(|g| Parsed {
+                        loc: None,
+                        docstring: None,
+                        data: g.clone(),
+                    })
+                    .collect::<Vec<_>>(),
                 rules: rules
                     .iter()
-                    .map(|rule| rule.rule.clone())
+                    .map(|rule| Parsed {
+                        loc: None,
+                        docstring: None,
+                        data: rule.rule.clone(),
+                    })
                     .collect::<Vec<_>>(),
                 recursive,
-                include_fragments,
+                include_fragments: include_fragments
+                    .iter()
+                    .map(|i| Parsed {
+                        loc: None,
+                        docstring: None,
+                        data: i.clone(),
+                    })
+                    .collect::<Vec<_>>(),
             },
         }
     }
@@ -195,7 +227,14 @@ impl PyEntrypoint {
         Self {
             entrypoint: Entrypoint {
                 entrypoint,
-                rules: rules.iter().map(|r| r.rule.clone()).collect::<Vec<_>>(),
+                rules: rules
+                    .iter()
+                    .map(|r| Parsed {
+                        loc: None,
+                        docstring: None,
+                        data: r.rule.clone(),
+                    })
+                    .collect::<Vec<_>>(),
             },
         }
     }
@@ -239,8 +278,22 @@ impl PyFragment {
         Self {
             fragment: Fragment {
                 name,
-                grants,
-                rules: rules.iter().map(|r| r.rule.clone()).collect::<Vec<_>>(),
+                grants: grants
+                    .iter()
+                    .map(|g| Parsed {
+                        loc: None,
+                        docstring: None,
+                        data: g.clone(),
+                    })
+                    .collect::<Vec<_>>(),
+                rules: rules
+                    .iter()
+                    .map(|r| Parsed {
+                        loc: None,
+                        docstring: None,
+                        data: r.rule.clone(),
+                    })
+                    .collect::<Vec<_>>(),
             },
         }
     }
@@ -255,18 +308,26 @@ pub struct PySlangFile {
 #[pymethods]
 impl PySlangFile {
     #[new]
-    #[args(fragments="Vec::new()")]
+    #[args(fragments = "Vec::new()")]
     fn new(entrypoints: Vec<PyEntrypoint>, fragments: Vec<PyFragment>) -> Self {
         Self {
             slang_file: SlangFile {
                 entrypoints: entrypoints
                     .iter()
-                    .map(|e| e.entrypoint.clone())
+                    .map(|e| Parsed {
+                        loc: None,
+                        docstring: None,
+                        data: e.entrypoint.clone(),
+                    })
                     .collect::<Vec<_>>(),
 
                 fragments: fragments
                     .iter()
-                    .map(|f| f.fragment.clone())
+                    .map(|f| Parsed {
+                        loc: None,
+                        docstring: None,
+                        data: f.fragment.clone(),
+                    })
                     .collect::<Vec<_>>(),
             },
         }

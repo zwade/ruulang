@@ -1,6 +1,6 @@
 use pyo3::{pyfunction, pymodule, types::PyModule, wrap_pyfunction, PyResult};
 
-use slang_core::parser::parser_constructs::{ParserStatement, ParserAssemble};
+use slang_core::parser::{assembler::ParserAssemble, parser_constructs::ParserStatement};
 
 use crate::bindings::{PyAttribute, PyEntrypoint, PyRule, PySlangFile};
 
@@ -8,7 +8,7 @@ use crate::bindings::{PyAttribute, PyEntrypoint, PyRule, PySlangFile};
 fn parse(s: &str) -> PyResult<PySlangFile> {
     match ParserStatement::parse(s) {
         Ok(statements) => {
-            let as_py = statements.assemble();
+            let (_schema, as_py) = statements.assemble();
             Ok(PySlangFile::create(as_py))
         }
         Err(e) => {

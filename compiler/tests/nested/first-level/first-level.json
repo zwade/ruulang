@@ -1,0 +1,20 @@
+{
+  "entrypoints": [
+    {
+      "entrypoint": "User",
+      "rules": [
+        {
+          "relationship": "sibling",
+          "attributes": [],
+          "grants": [
+            [
+              "read"
+            ]
+          ],
+          "rules": [],
+          "recursive": false
+        }
+      ]
+    }
+  ]
+}

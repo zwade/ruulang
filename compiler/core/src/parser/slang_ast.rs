@@ -2,6 +2,8 @@ use std::hash::{Hash, Hasher};
 
 use serde::{Deserialize, Serialize};
 
+use super::parse_location::Parsed;
+
 pub trait SlangSerialize {
     fn slang_serialize(&self, indent: usize) -> String;
 }
@@ -43,17 +45,16 @@ impl SlangSerialize for Attribute {
     }
 }
 
-
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct Rule {
     pub relationship: String,
-    pub attributes: Vec<Attribute>,
-    pub grants: Vec<Vec<String>>,
-    pub rules: Vec<Rule>,
+    pub attributes: Vec<Parsed<Attribute>>,
+    pub grants: Vec<Parsed<Vec<String>>>,
+    pub rules: Vec<Parsed<Rule>>,
     pub recursive: bool,
 
     #[serde(skip_serializing_if = "Vec::is_empty", default)]
-    pub include_fragments: Vec<String>,
+    pub include_fragments: Vec<Parsed<String>>,
 }
 
 impl Hash for Rule {
@@ -79,7 +80,7 @@ impl SlangSerialize for Rule {
 
         if self.attributes.len() > 0 {
             for attr in self.attributes.iter() {
-                result.push_str(attr.slang_serialize(indent + 1).as_str());
+                result.push_str(attr.data.slang_serialize(indent + 1).as_str());
             }
         }
 
@@ -89,7 +90,7 @@ impl SlangSerialize for Rule {
             result.push_str("\n");
 
             for grant in self.grants.iter() {
-                let grant_str = grant.join(".");
+                let grant_str = grant.data.join(".");
                 result.push_str(
                     format!("{}{};\n", " ".repeat((indent + 1) * 4).as_str(), grant_str).as_str(),
                 );
@@ -100,7 +101,14 @@ impl SlangSerialize for Rule {
             result.push_str("\n");
 
             for fragment in self.include_fragments.iter() {
-                result.push_str(format!("{}#{};\n", " ".repeat((indent + 1) * 4).as_str(), fragment).as_str());
+                result.push_str(
+                    format!(
+                        "{}#{};\n",
+                        " ".repeat((indent + 1) * 4).as_str(),
+                        fragment.data
+                    )
+                    .as_str(),
+                );
             }
         }
 
@@ -108,7 +116,7 @@ impl SlangSerialize for Rule {
             result.push_str("\n");
 
             for (i, rule) in self.rules.iter().enumerate() {
-                result.push_str(rule.slang_serialize(indent + 1).as_str());
+                result.push_str(rule.data.slang_serialize(indent + 1).as_str());
 
                 if i < self.rules.len() - 1 {
                     result.push_str("\n");
@@ -124,7 +132,7 @@ impl SlangSerialize for Rule {
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct Entrypoint {
     pub entrypoint: String,
-    pub rules: Vec<Rule>,
+    pub rules: Vec<Parsed<Rule>>,
 }
 
 impl Hash for Entrypoint {
@@ -141,7 +149,7 @@ impl SlangSerialize for Entrypoint {
         result.push_str(format!("{}@{} {{\n", " ".repeat(indent * 4), self.entrypoint).as_str());
 
         for (i, rule) in self.rules.iter().enumerate() {
-            result.push_str(rule.slang_serialize(indent + 1).as_str());
+            result.push_str(rule.data.slang_serialize(indent + 1).as_str());
 
             if i < self.rules.len() - 1 {
                 result.push_str("\n");
@@ -156,8 +164,9 @@ impl SlangSerialize for Entrypoint {
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct Fragment {
     pub name: String,
-    pub rules: Vec<Rule>,
-    pub grants: Vec<Vec<String>>,
+    pub for_entity: String,
+    pub rules: Vec<Parsed<Rule>>,
+    pub grants: Vec<Parsed<Vec<String>>>,
 }
 
 impl Hash for Fragment {
@@ -177,7 +186,7 @@ impl SlangSerialize for Fragment {
             result.push_str("\n");
 
             for grant in self.grants.iter() {
-                let grant_str = grant.join(".");
+                let grant_str = grant.data.join(".");
                 result.push_str(
                     format!("{}{};\n", " ".repeat((indent + 1) * 4).as_str(), grant_str).as_str(),
                 );
@@ -188,7 +197,7 @@ impl SlangSerialize for Fragment {
             result.push_str("\n");
 
             for (i, rule) in self.rules.iter().enumerate() {
-                result.push_str(rule.slang_serialize(indent + 1).as_str());
+                result.push_str(rule.data.slang_serialize(indent + 1).as_str());
 
                 if i < self.rules.len() - 1 {
                     result.push_str("\n");
@@ -203,10 +212,10 @@ impl SlangSerialize for Fragment {
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct SlangFile {
-    pub entrypoints: Vec<Entrypoint>,
+    pub entrypoints: Vec<Parsed<Entrypoint>>,
 
     #[serde(skip_serializing_if = "Vec::is_empty", default)]
-    pub fragments: Vec<Fragment>,
+    pub fragments: Vec<Parsed<Fragment>>,
 }
 
 impl Hash for SlangFile {
@@ -215,13 +224,12 @@ impl Hash for SlangFile {
     }
 }
 
-
 impl SlangSerialize for SlangFile {
     fn slang_serialize(&self, indent: usize) -> String {
         let mut result = String::new();
 
         for fragment in self.fragments.iter() {
-            result.push_str(fragment.slang_serialize(indent).as_str());
+            result.push_str(fragment.data.slang_serialize(indent).as_str());
             result.push_str("\n");
         }
 
@@ -230,7 +238,7 @@ impl SlangSerialize for SlangFile {
         }
 
         for (i, entrypoint) in self.entrypoints.iter().enumerate() {
-            result.push_str(entrypoint.slang_serialize(indent).as_str());
+            result.push_str(entrypoint.data.slang_serialize(indent).as_str());
             result.push_str("\n");
 
             if i < self.entrypoints.len() - 1 {

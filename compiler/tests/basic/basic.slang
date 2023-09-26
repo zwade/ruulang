@@ -1,25 +1,61 @@
 /**
-    Foo
+    Comment 1
 */
-fragment credit-app {
+entity user {
+    personnel
+        :is-rule
+        :is-admin(one two)
+        -> company;
+}
+
+entity company {
+    read;
+    read.basic;
+
+    write;
+
+    customer-app -> credit-app;
+    supplier-app -> credit-app;
+}
+
+entity credit-app {
     read;
 
+    supplier -> company;
+    customer -> company;
+}
+
+
+fragment basic-credit-app for credit-app {
+    // Comment 2
+    read;
+
+    /** Comment 3 **/
+    // Comment 4
     supplier {
         read;
-        supplier-app { #credit-app; }
+        // Comment 5
+        supplier-app {
+            // Comment 6
+            #basic-credit-app;
+        }
     }
 
-    customer {
+    customer:has-test(first second) :has-another-test(third fourth) {
         read;
-        customer-app { #credit-app; }
+        customer-app { #basic-credit-app; }
     }
 }
 
+// Comment 7
 @user {
+    // Comment 8
     personnel:is-admin {
-        read.basic;
+        // Comment 9
+        read.bsic;
+        // Comment 10
         write;
 
-        supplier-app { #credit-app; }
+        supplier-app { #basic-credit-app; }
     }
 }

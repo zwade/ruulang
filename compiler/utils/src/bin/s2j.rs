@@ -1,5 +1,6 @@
 use notify::{DebouncedEvent, RecursiveMode, Watcher};
-use slang_core::parser::parser_constructs::{ParserStatement, ParserAssemble};
+use slang_core::parser::assembler::ParserAssemble;
+use slang_core::parser::parser_constructs::ParserStatement;
 use std::fs;
 use std::time::Duration;
 use std::{path::PathBuf, sync::mpsc::channel};
