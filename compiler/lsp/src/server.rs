@@ -1,6 +1,6 @@
 use ruulang_core::{
     config::config::RuuLangConfig,
-    parser::parse_location::{Descendable, DescendableChildren},
+    parser::parse_location::Descendable,
     utils::error::{RuuLangError, TypecheckError},
     workspace::workspace::Workspace,
 };
@@ -176,7 +176,7 @@ impl LanguageServer for RuuLangServer {
         })
     }
 
-    async fn initialized(&self, params: InitializedParams) {
+    async fn initialized(&self, _params: InitializedParams) {
         self.client
             .log_message(MessageType::INFO, "server initialized!")
             .await;

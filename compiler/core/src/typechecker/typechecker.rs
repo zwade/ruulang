@@ -245,7 +245,7 @@ impl<'a> Typechecker<'a> {
     }
 
     fn parse_fragments(
-        entities: &'a Vec<WithOrigin<Parsed<Entity>>>,
+        _entities: &'a Vec<WithOrigin<Parsed<Entity>>>,
         schemas: &'a Vec<WithOrigin<Result<RuuLangFile>>>,
     ) -> HashMap<(String, String), &'a Parsed<Fragment>> {
         schemas

@@ -4,7 +4,6 @@ use std::{
     hash::{Hash, Hasher},
     ops::Deref,
     path::PathBuf,
-    sync::Arc,
 };
 
 use serde::{Deserialize, Serialize};

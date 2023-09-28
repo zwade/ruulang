@@ -40,7 +40,6 @@ where
     pub fn contains_suffix(&self, path: &Vec<T>) -> bool {
         self.root.contains_suffix(path)
     }
-
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -113,11 +112,11 @@ where
     }
 
     pub fn contains(&self, path: &Vec<T>) -> bool {
-        return self.contains_helper(path, false, false)
+        return self.contains_helper(path, false, false);
     }
 
     pub fn contains_prefix(&self, path: &Vec<T>) -> bool {
-        return self.contains_helper(path, true, false)
+        return self.contains_helper(path, true, false);
     }
 
     pub fn contains_suffix(&self, path: &Vec<T>) -> bool {
@@ -143,7 +142,7 @@ where
 
         if tail.is_empty() {
             if child.value.is_none() {
-                return allow_prefix
+                return allow_prefix;
             }
 
             return true;
