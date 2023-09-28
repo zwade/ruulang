@@ -2,7 +2,7 @@ use std::hash::{Hash, Hasher};
 
 use serde::{Deserialize, Serialize};
 
-use super::parse_location::Parsed;
+use super::parse_location::{Context, Descendable, DescendableChildren, DescentContext, Parsed};
 
 pub trait RuuLangSerialize {
     fn ruulang_serialize(&self, indent: usize) -> String;
@@ -10,7 +10,7 @@ pub trait RuuLangSerialize {
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct Attribute {
-    pub name: String,
+    pub name: Parsed<String>,
     pub arguments: Vec<String>,
 }
 
@@ -25,7 +25,7 @@ impl RuuLangSerialize for Attribute {
     fn ruulang_serialize(&self, _indent: usize) -> String {
         let mut result = String::new();
 
-        result.push_str(format!(":{}", self.name).as_str());
+        result.push_str(format!(":{}", self.name.data).as_str());
 
         if self.arguments.len() > 0 {
             result.push_str("(");
@@ -45,9 +45,19 @@ impl RuuLangSerialize for Attribute {
     }
 }
 
+impl<'a> DescendableChildren<'a> for Attribute {
+    fn context_and_name(&self) -> (Context<'a>, Option<String>) {
+        (Context::None, Some(self.name.data.clone()))
+    }
+
+    fn descend(&self) -> Vec<&dyn Descendable> {
+        vec![&self.name as &dyn Descendable]
+    }
+}
+
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct Rule {
-    pub relationship: String,
+    pub relationship: Parsed<String>,
     pub attributes: Vec<Parsed<Attribute>>,
     pub grants: Vec<Parsed<Vec<String>>>,
     pub rules: Vec<Parsed<Rule>>,
@@ -70,13 +80,13 @@ impl Hash for Rule {
 
 impl RuuLangSerialize for Rule {
     fn ruulang_serialize(&self, indent: usize) -> String {
-        if self.relationship == "*" {
+        if self.relationship.data == "*" {
             return format!("{}*\n", " ".repeat(indent * 4));
         }
 
         let mut result = String::new();
 
-        result.push_str(format!("{}{}", " ".repeat(indent * 4), self.relationship).as_str());
+        result.push_str(format!("{}{}", " ".repeat(indent * 4), self.relationship.data).as_str());
 
         if self.attributes.len() > 0 {
             for attr in self.attributes.iter() {
@@ -129,9 +139,26 @@ impl RuuLangSerialize for Rule {
     }
 }
 
+impl<'a> DescendableChildren<'a> for Rule {
+    fn context_and_name(&self) -> (Context<'a>, Option<String>) {
+        (Context::None, Some(self.relationship.data.clone()))
+    }
+
+    fn descend(&self) -> Vec<&dyn Descendable> {
+        self.attributes
+            .iter()
+            .map(|x| x as &dyn Descendable)
+            .chain(self.grants.iter().map(|x| x as &dyn Descendable))
+            .chain(self.rules.iter().map(|x| x as &dyn Descendable))
+            .chain(self.include_fragments.iter().map(|x| x as &dyn Descendable))
+            .chain(std::iter::once(&self.relationship as &dyn Descendable))
+            .collect()
+    }
+}
+
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct Entrypoint {
-    pub entrypoint: String,
+    pub entrypoint: Parsed<String>,
     pub rules: Vec<Parsed<Rule>>,
 }
 
@@ -146,7 +173,8 @@ impl RuuLangSerialize for Entrypoint {
     fn ruulang_serialize(&self, indent: usize) -> String {
         let mut result = String::new();
 
-        result.push_str(format!("{}@{} {{\n", " ".repeat(indent * 4), self.entrypoint).as_str());
+        result
+            .push_str(format!("{}@{} {{\n", " ".repeat(indent * 4), self.entrypoint.data).as_str());
 
         for (i, rule) in self.rules.iter().enumerate() {
             result.push_str(rule.data.ruulang_serialize(indent + 1).as_str());
@@ -161,10 +189,27 @@ impl RuuLangSerialize for Entrypoint {
     }
 }
 
+impl<'a> DescendableChildren<'a> for Entrypoint {
+    fn context_and_name(&'a self) -> (Context<'a>, Option<String>) {
+        (
+            Context::Entrypoint(Box::new(&self)),
+            Some(self.entrypoint.data.clone()),
+        )
+    }
+
+    fn descend(&self) -> Vec<&dyn Descendable> {
+        self.rules
+            .iter()
+            .map(|x| x as &dyn Descendable)
+            .chain(std::iter::once(&self.entrypoint as &dyn Descendable))
+            .collect()
+    }
+}
+
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct Fragment {
-    pub name: String,
-    pub for_entity: String,
+    pub name: Parsed<String>,
+    pub for_entity: Parsed<String>,
     pub rules: Vec<Parsed<Rule>>,
     pub grants: Vec<Parsed<Vec<String>>>,
 }
@@ -180,7 +225,8 @@ impl RuuLangSerialize for Fragment {
     fn ruulang_serialize(&self, indent: usize) -> String {
         let mut result = String::new();
 
-        result.push_str(format!("{}fragment {} {{", " ".repeat(indent * 4), self.name).as_str());
+        result
+            .push_str(format!("{}fragment {} {{", " ".repeat(indent * 4), self.name.data).as_str());
 
         if self.grants.len() > 0 {
             result.push_str("\n");
@@ -207,6 +253,21 @@ impl RuuLangSerialize for Fragment {
 
         result.push_str(format!("{}}}\n", " ".repeat(indent * 4)).as_str());
         result
+    }
+}
+
+impl<'a> DescendableChildren<'a> for Fragment {
+    fn context_and_name(&self) -> (Context<'a>, Option<String>) {
+        (Context::None, Some(self.name.data.clone()))
+    }
+
+    fn descend(&self) -> Vec<&dyn Descendable> {
+        self.rules
+            .iter()
+            .map(|x| x as &dyn Descendable)
+            .chain(self.grants.iter().map(|x| x as &dyn Descendable))
+            .chain(std::iter::once(&self.name as &dyn Descendable))
+            .collect()
     }
 }
 
@@ -247,5 +308,38 @@ impl RuuLangSerialize for RuuLangFile {
         }
 
         result
+    }
+}
+
+impl<'a> DescendableChildren<'a> for RuuLangFile {
+    fn context_and_name(&self) -> (Context<'a>, Option<String>) {
+        (Context::None, None)
+    }
+
+    fn descend(&self) -> Vec<&dyn Descendable> {
+        self.entrypoints
+            .iter()
+            .map(|x| x as &dyn Descendable)
+            .chain(self.fragments.iter().map(|x| x as &dyn Descendable))
+            .collect()
+    }
+}
+
+impl Descendable for RuuLangFile {
+    fn descend_at(
+        &self,
+        loc: (usize, usize),
+    ) -> Option<Vec<super::parse_location::DescentContext>> {
+        let children = self.descend();
+
+        for child in children {
+            if let Some(mut ctx) = child.descend_at(loc) {
+                ctx.push(DescentContext::new(Context::None, None));
+
+                return Some(ctx);
+            }
+        }
+
+        None
     }
 }

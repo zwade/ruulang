@@ -53,7 +53,7 @@ impl<'a> Typechecker<'a> {
     fn validate_entrypoint(&self, entrypoint: &Parsed<Entrypoint>) -> Vec<RuuLangError> {
         let mut violations = vec![];
 
-        let starting_entity = match self.entities.get(&entrypoint.data.entrypoint) {
+        let starting_entity = match self.entities.get(&entrypoint.entrypoint.data) {
             None => {
                 let missing_entity_name = &entrypoint.data.entrypoint;
                 let missing_entity_error = entrypoint.as_with_data(format!(
@@ -81,7 +81,7 @@ impl<'a> Typechecker<'a> {
     fn validate_fragment(&self, fragment: &Parsed<Fragment>) -> Vec<RuuLangError> {
         let mut violations = vec![];
 
-        let starting_entity = match self.entities.get(&fragment.data.for_entity) {
+        let starting_entity = match self.entities.get(&fragment.for_entity.data) {
             None => {
                 let missing_entity_name = &fragment.data.for_entity;
                 let missing_entity_error = fragment.as_with_data(format!(
@@ -99,7 +99,7 @@ impl<'a> Typechecker<'a> {
         };
 
         for grant in &fragment.data.grants {
-            if !starting_entity.allows_grant(&grant.data) {
+            if !starting_entity.allows_grant(&grant) {
                 let grant_str = grant.data.join(".");
                 let grant_error = grant.as_with_data(format!(
                     "Entity {} does not allow grant: {}",
@@ -127,13 +127,13 @@ impl<'a> Typechecker<'a> {
     ) -> Vec<RuuLangError> {
         let mut violations = vec![];
 
-        let current_rel = match starting_entity.get_rule(&current_rule.data.relationship) {
+        let current_rel = match starting_entity.get_rule(&current_rule.relationship) {
             None => {
-                if &current_rule.data.relationship == "*" {
+                if &current_rule.data.relationship.data == "*" {
                     return violations;
                 }
 
-                let missing_relationship_name = &current_rule.data.relationship;
+                let missing_relationship_name = &current_rule.relationship;
                 let bad_entity_name = &starting_entity.name;
 
                 let missing_rule_error = current_rule.as_with_data(format!(
@@ -151,7 +151,7 @@ impl<'a> Typechecker<'a> {
             Some(c) => c,
         };
 
-        let current_entity = match self.entities.get(&current_rel.data.entity_name) {
+        let current_entity = match self.entities.get(&current_rel.entity_name.data) {
             None => {
                 let missing_entity_name = current_rel.data.entity_name.clone();
                 let missing_entity_error = current_rel.as_with_data(format!(
@@ -169,7 +169,7 @@ impl<'a> Typechecker<'a> {
         };
 
         for grant in &current_rule.data.grants {
-            if !current_entity.allows_grant(&grant.data) {
+            if !current_entity.allows_grant(&grant) {
                 let grant_name = grant.data.clone().join(".");
 
                 let error = grant.as_with_data(format!("Invalid grant {}", grant_name));
@@ -225,8 +225,8 @@ impl<'a> Typechecker<'a> {
                 let key = entity_name.clone();
                 let name_for_insert = entity_name.clone();
                 let found_entity = entity_map
-                    .entry(key)
-                    .or_insert_with(|| Box::new(TcEntity::new(name_for_insert)));
+                    .entry(key.data)
+                    .or_insert_with(|| Box::new(TcEntity::new(name_for_insert.data)));
 
                 entity.data.data.relationships.iter().for_each(|rel| {
                     let (updated_rel, _) = rel.clone().into_with_filename(origin.origin.clone());
@@ -259,8 +259,8 @@ impl<'a> Typechecker<'a> {
             })
             .flat_map(|schema| &schema.data.fragments)
             .map(|fragment| {
-                let fragment_name = fragment.data.name.clone();
-                let entity_name = fragment.data.for_entity.clone();
+                let fragment_name = fragment.data.name.data.clone();
+                let entity_name = fragment.data.for_entity.data.clone();
                 ((fragment_name, entity_name), fragment)
             })
             .collect::<HashMap<_, _>>()

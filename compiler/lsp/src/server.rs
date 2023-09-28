@@ -1,5 +1,6 @@
 use ruulang_core::{
     config::config::RuuLangConfig,
+    parser::parse_location::{Descendable, DescendableChildren},
     utils::error::{RuuLangError, TypecheckError},
     workspace::workspace::Workspace,
 };
@@ -8,13 +9,14 @@ use tower_lsp::{
     jsonrpc,
     lsp_types::{
         Diagnostic, DiagnosticSeverity, DidChangeTextDocumentParams, DidOpenTextDocumentParams,
-        Hover, HoverParams, InitializeParams, InitializeResult, InitializedParams, MessageType,
-        ServerCapabilities, TextDocumentSyncCapability, TextDocumentSyncKind, Url,
+        Hover, HoverParams, HoverProviderCapability, InitializeParams, InitializeResult,
+        InitializedParams, MessageType, ServerCapabilities, TextDocumentSyncCapability,
+        TextDocumentSyncKind, Url,
     },
     Client, LanguageServer,
 };
 
-use crate::utils::location_pair_to_range;
+use crate::utils::{get_line_prefix_sum, location_pair_to_range, position_to_location};
 
 pub struct RuuLangServer {
     client: Client,
@@ -152,7 +154,8 @@ impl LanguageServer for RuuLangServer {
                     continue;
                 }
 
-                let workspace = Workspace::new(config.unwrap(), root_dir);
+                let mut workspace = Workspace::new(config.unwrap(), root_dir);
+                workspace.reload().await;
                 workspaces.push(workspace)
             }
         }
@@ -161,7 +164,7 @@ impl LanguageServer for RuuLangServer {
 
         Ok(InitializeResult {
             capabilities: ServerCapabilities {
-                // hover_provider: Some(HoverProviderCapability::Simple(true)),
+                hover_provider: Some(HoverProviderCapability::Simple(true)),
                 text_document_sync: Some(TextDocumentSyncCapability::Kind(
                     TextDocumentSyncKind::FULL,
                 )),
@@ -198,10 +201,6 @@ impl LanguageServer for RuuLangServer {
     }
 
     async fn hover(&self, params: HoverParams) -> jsonrpc::Result<Option<Hover>> {
-        self.client
-            .log_message(MessageType::INFO, format!("Hover: {:#?}", params))
-            .await;
-
         let file_uri = params.text_document_position_params.text_document.uri;
         let file_name = file_uri.to_file_path().unwrap();
         let maybe_workspace = self.workspace_for_file(&file_uri).await;
@@ -216,10 +215,25 @@ impl LanguageServer for RuuLangServer {
             None => return Ok(None),
         };
 
-        let _file = match &contents.data {
-            Ok(file) => file,
+        let schema = match &contents.data {
+            Ok(schema) => schema,
             Err(_) => return Ok(None),
         };
+
+        let file_contents = match workspace.resolve_file(&file_name) {
+            Some(data) => data,
+            None => return Ok(None),
+        };
+
+        let location = position_to_location(
+            &get_line_prefix_sum(file_contents),
+            &params.text_document_position_params.position,
+        ) as usize;
+
+        let descension = schema.descend_at((location, location));
+        self.client
+            .log_message(MessageType::INFO, format!("Found: {:#?}", descension))
+            .await;
 
         Ok(None)
     }

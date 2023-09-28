@@ -28,19 +28,17 @@ pub Entry: ParserStatement = {
 
 pub Entrypoint: Parsed<Entrypoint> = {
     <l:@L>
-        "@" <s:Symbol> "{"
+        "@" <s:Identifier> "{"
             <rs: (<CommentedRule>)*>
             (<Comment>)*
         "}"
-    <r:@R> => Parsed {
-        loc: Some((l, r)),
-        docstring: None,
-        file_name: None,
-        data: Entrypoint {
+    <r:@R> => Parsed::new_at_loc(
+        (l, r),
+        Entrypoint {
             entrypoint: s,
             rules: rs
         }
-    }
+    )
 }
 
 pub CommentedEntrypoint: Parsed<Entrypoint> = {
@@ -49,21 +47,19 @@ pub CommentedEntrypoint: Parsed<Entrypoint> = {
 
 pub Frag: Parsed<Fragment> = {
     <l:@L>
-        "fragment" <s:Symbol> "for" <e:Symbol> "{"
+        "fragment" <s:Identifier> "for" <e:Identifier> "{"
             <g: (<CommentedGrant>)*>
             <c: (<CommentedRule>)*>
         "}"
-    <r:@R> => Parsed {
-        loc: Some((l, r)),
-        docstring: None,
-        file_name: None,
-        data: Fragment {
+    <r:@R> => Parsed::new_at_loc(
+        (l, r),
+        Fragment {
             name: s,
             for_entity: e,
             grants: g,
             rules: c,
         },
-    }
+    )
 }
 
 pub CommentedFrag: Parsed<Fragment> = {
@@ -72,16 +68,14 @@ pub CommentedFrag: Parsed<Fragment> = {
 
 pub Rel: Parsed<Rule> = {
     <l:@L>
-        <s:Symbol> <a: (<CommentedAttr>)*> "{"
+        <s:Identifier> <a: (<CommentedAttr>)*> "{"
             <g: (<CommentedGrant>)*>
             <f: (<CommentedFragmentInclude>)*>
             <c: (<CommentedRule>)*>
         "}"
-    <r:@R> => Parsed {
-        loc: Some((l, r)),
-        docstring: None,
-        file_name: None,
-        data: Rule {
+    <r:@R> => Parsed::new_at_loc(
+        (l, r),
+        Rule {
             relationship: s,
             attributes: a,
             grants: g,
@@ -89,21 +83,19 @@ pub Rel: Parsed<Rule> = {
             include_fragments: f,
             recursive: false,
         },
-    }
+    )
 }
 
 pub Uni: Parsed<Rule> = {
     <l1:@L>
-        <s:Symbol> <a: (<CommentedAttr>)*> "{"
+        <s:Identifier> <a: (<CommentedAttr>)*> "{"
             <l2:@L>
                 "*"
             <r2:@R>
         "}"
-    <r1:@R> => Parsed {
-        loc: Some((l1, r1)),
-        docstring: None,
-        file_name: None,
-        data: Rule {
+    <r1:@R> => Parsed::new_at_loc(
+        (l1, r1),
+        Rule {
             relationship: s,
             attributes: a,
             grants: vec![
@@ -120,12 +112,13 @@ pub Uni: Parsed<Rule> = {
                     data: vec!["write".to_string()]
                 },
             ],
-            rules: vec![Parsed {
-                loc: Some((l2, r2)),
-                docstring: None,
-                file_name: None,
-                data: Rule {
-                    relationship: "*".to_string(),
+            rules: vec![Parsed::new_at_loc(
+                (l2, r2),
+                Rule {
+                    relationship: Parsed::new_at_loc(
+                        (l2, r2),
+                        "*".to_string()
+                    ),
                     attributes: vec![],
                     grants: vec![
                         Parsed {
@@ -145,11 +138,11 @@ pub Uni: Parsed<Rule> = {
                     recursive: true,
                     include_fragments: vec![],
                 }
-            }],
+            )],
             include_fragments: vec![],
             recursive: false,
         }
-    }
+    )
 }
 
 pub Rule: Parsed<Rule> = {
@@ -163,27 +156,23 @@ pub CommentedRule: Parsed<Rule> = {
 
 pub Attr: Parsed<Attribute> = {
     <l:@L>
-        ":" <s:Symbol> "(" <a: (<Symbol>)*> ")"
-    <r:@R> => Parsed {
-        loc: Some((l, r)),
-        docstring: None,
-        file_name: None,
-        data: Attribute {
+        ":" <s:Identifier> "(" <a: (<Symbol>)*> ")"
+    <r:@R> => Parsed::new_at_loc(
+        (l, r),
+        Attribute {
             name: s,
             arguments: a,
         },
-    },
+    ),
     <l:@L>
-        ":" <s:Symbol>
-    <r:@R> => Parsed {
-        loc: Some((l, r)),
-        docstring: None,
-        file_name: None,
-        data: Attribute {
+        ":" <s:Identifier>
+    <r:@R> => Parsed::new_at_loc(
+        (l, r),
+        Attribute {
             name: s,
             arguments: vec![],
         },
-    },
+    ),
 }
 
 pub CommentedAttr: Parsed<Attribute> = {
@@ -196,12 +185,10 @@ pub Grant: Parsed<Vec<String>> = {
     <r:@R> => {
         let mut vec = vec![s];
         vec.extend(sp);
-        Parsed {
-            loc: Some((l, r)),
-            docstring: None,
-            file_name: None,
-            data: vec
-        }
+        Parsed::new_at_loc(
+            (l, r),
+            vec
+        )
     }
 }
 
@@ -212,12 +199,10 @@ pub CommentedGrant: Parsed<Vec<String>> = {
 pub FragmentInclude: Parsed<String> = {
     <l:@L>
         "#" <f: Symbol> ";"
-    <r:@R> => Parsed {
-        loc: Some((l, r)),
-        docstring: None,
-        file_name: None,
-        data: f
-    }
+    <r:@R> => Parsed::new_at_loc(
+        (l, r),
+        f
+    )
 }
 
 pub CommentedFragmentInclude: Parsed<String> = {
@@ -227,20 +212,18 @@ pub CommentedFragmentInclude: Parsed<String> = {
 
 pub Entity: Parsed<Entity> = {
     <l:@L>
-        "entity" <e: Symbol> "{"
+        "entity" <e: Identifier> "{"
             <g: (<CommentedGrant>)*>
             <rs: (<CommentedRelationship>)*>
         "}"
-    <r:@R> => Parsed {
-        loc: Some((l, r)),
-        docstring: None,
-        file_name: None,
-        data: Entity {
-            name: e.to_string(),
+    <r:@R> => Parsed::new_at_loc(
+        (l, r),
+        Entity {
+            name: e,
             grants: g,
             relationships: rs,
         }
-    }
+    )
 }
 
 pub CommentedEntity: Parsed<Entity> = {
@@ -249,19 +232,17 @@ pub CommentedEntity: Parsed<Entity> = {
 
 pub Relationship: Parsed<Relationship> = {
     <l:@L>
-        <rel: Symbol>
+        <rel: Identifier>
             <a: (<CommentedAttr>)*>
-            "->" <entity: Symbol> ";"
-    <r:@R> => Parsed {
-        loc: Some((l, r)),
-        docstring: None,
-        file_name: None,
-        data: Relationship {
+            "->" <entity: Identifier> ";"
+    <r:@R> => Parsed::new_at_loc(
+        (l, r),
+        Relationship {
             relationship_name: rel,
             entity_name: entity,
             attributes: a,
         }
-    }
+    )
 }
 
 pub CommentedRelationship: Parsed<Relationship> = {
@@ -269,6 +250,15 @@ pub CommentedRelationship: Parsed<Relationship> = {
 }
 
 Symbol: String = <s:r"[a-zA-Z][a-zA-Z0-9-_]*|\*"> => s.to_string();
+
+Identifier: Parsed<String> = {
+    <l:@L>
+        <id: Symbol>
+    <r:@R> => Parsed::new_at_loc(
+        (l, r),
+        id
+    )
+}
 
 Comment: String = {
     <c: LineComment> => c.to_string(),

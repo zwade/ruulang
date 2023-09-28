@@ -1,6 +1,6 @@
 use tower_lsp::lsp_types::{Position, Range};
 
-fn get_line_prefix_sum(contents: &String) -> Vec<u32> {
+pub fn get_line_prefix_sum(contents: &String) -> Vec<u32> {
     contents
         .split("\n")
         .fold((0, Vec::new()), |(mut sum, mut acc), line| {
@@ -21,6 +21,10 @@ fn location_to_position(line_prefix_sum: &Vec<u32>, location: u32) -> Position {
     let column = location - line_prefix_sum[line];
 
     Position::new(line as u32, column)
+}
+
+pub fn position_to_location(line_prefix_sum: &Vec<u32>, position: &Position) -> u32 {
+    line_prefix_sum[position.line as usize] + position.character
 }
 
 pub fn location_pair_to_range(contents: &String, start: u32, end: u32) -> Range {

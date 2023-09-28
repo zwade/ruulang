@@ -66,7 +66,7 @@ fn get_args() -> CliOptions {
 }
 
 async fn compile_all(workspace: &mut Workspace, options: &CliOptions) {
-    workspace.reload().await.unwrap();
+    workspace.reload().await;
 
     if !options.no_check {
         workspace.typecheck().await.unwrap();

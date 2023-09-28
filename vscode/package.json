@@ -10,6 +10,11 @@
     "activationEvents": [
         "onLanguage:ruulang"
     ],
+    "icon": "assets/logo-text.png",
+    "galleryBanner": {
+        "color": "BB3910",
+        "theme": "dark"
+    },
     "main": "dist/extension.js",
     "contributes": {
         "languages": [
@@ -22,7 +27,11 @@
                 "extensions": [
                     ".ruu"
                 ],
-                "configuration": "./language-configuration.json"
+                "configuration": "./language-configuration.json",
+                "icon": {
+                    "dark": "./assets/logo.svg",
+                    "light": "./assets/logo.svg"
+                }
             }
         ],
         "commands": [

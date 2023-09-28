@@ -40,7 +40,7 @@ impl Workspace {
         };
     }
 
-    pub async fn reload(&mut self) -> Result<()> {
+    pub async fn reload(&mut self) {
         let files = self.gather().await;
         let file_data = self.read_all(&files).await;
         let (entities, files) = self.parse_all(&file_data);
@@ -48,8 +48,6 @@ impl Workspace {
         self.entities = entities;
         self.files = files;
         self.source_files = file_data;
-
-        Ok(())
     }
 
     pub async fn file_is_ruulang_source(&self, path: &PathBuf) -> bool {
@@ -150,7 +148,7 @@ impl Workspace {
                         .map(|entity| WithOrigin::new(entity.clone(), path.clone())),
                 );
             }
-            Err(e) => {}
+            Err(_) => {}
         };
 
         let result_file = result.map(|(_, file)| file);
@@ -290,7 +288,7 @@ impl Workspace {
 
         let file = match &schema.data {
             Ok(d) => d,
-            Err(e) => return Ok(()),
+            Err(_) => return Ok(()),
         };
 
         let entities = &self.entities;

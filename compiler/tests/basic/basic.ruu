@@ -52,7 +52,7 @@ fragment basic-credit-app for credit-app {
     // Comment 8
     personnel:is-admin {
         // Comment 9
-        read.bsic;
+        read.basic;
         // Comment 10
         write;
 

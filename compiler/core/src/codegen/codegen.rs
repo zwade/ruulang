@@ -67,7 +67,7 @@ where
             let (entities, _) = codegen.get_schema_and_file();
             let entity_map = entities.iter().fold(HashMap::new(), |mut acc, entity| {
                 let new_file_name = entity.origin.with_extension("");
-                acc.insert(entity.data.data.name.as_str(), new_file_name);
+                acc.insert(entity.data.data.name.data.as_str(), new_file_name);
 
                 acc
             });

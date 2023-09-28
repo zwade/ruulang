@@ -10,7 +10,7 @@ pub struct TcEntity {
     pub name: String,
 
     relationships: HashMap<String, Parsed<Relationship>>,
-    grants: Trie<String, Parsed<()>>,
+    grants: Trie<String, Parsed<Vec<String>>>,
 }
 
 impl TcEntity {
@@ -23,12 +23,15 @@ impl TcEntity {
     }
 
     pub fn add_relationship(&mut self, rel: Parsed<Relationship>) -> bool {
-        if self.relationships.contains_key(&rel.data.relationship_name) {
+        if self
+            .relationships
+            .contains_key(&rel.data.relationship_name.data)
+        {
             return false;
         }
 
         let rels = &mut self.relationships;
-        rels.insert(rel.data.relationship_name.clone(), rel);
+        rels.insert(rel.data.relationship_name.data.clone(), rel);
 
         true
     }
@@ -38,8 +41,8 @@ impl TcEntity {
             return;
         }
 
-        let (parsed_context, data) = grant.into_with_data(());
-        self.grants.add(&data, parsed_context);
+        let new_grant = grant.clone();
+        self.grants.add(&grant.data, new_grant);
     }
 
     pub fn get_rule(&self, rule: &String) -> Option<&Parsed<Relationship>> {
