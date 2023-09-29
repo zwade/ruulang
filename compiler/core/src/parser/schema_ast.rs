@@ -18,8 +18,11 @@ pub struct Entity {
 }
 
 impl<'a> DescendableChildren<'a> for Entity {
-    fn context_and_name(&self) -> (Context<'a>, Option<String>) {
-        (Context::None, Some(self.name.data.clone()))
+    fn context_and_name(&'a self) -> (Context<'a>, Option<String>) {
+        (
+            Context::Entity(Box::new(&self)),
+            Some(self.name.data.clone()),
+        )
     }
 
     fn descend(&self) -> Vec<&dyn Descendable> {

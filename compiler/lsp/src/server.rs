@@ -1,6 +1,9 @@
 use ruulang_core::{
     config::config::RuuLangConfig,
-    parser::parse_location::Descendable,
+    parser::{
+        parse_location::{Context, Descendable, DescentContext},
+        schema_ast::Entity,
+    },
     utils::error::{RuuLangError, TypecheckError},
     workspace::workspace::Workspace,
 };
@@ -9,9 +12,9 @@ use tower_lsp::{
     jsonrpc,
     lsp_types::{
         Diagnostic, DiagnosticSeverity, DidChangeTextDocumentParams, DidOpenTextDocumentParams,
-        Hover, HoverParams, HoverProviderCapability, InitializeParams, InitializeResult,
-        InitializedParams, MessageType, ServerCapabilities, TextDocumentSyncCapability,
-        TextDocumentSyncKind, Url,
+        Hover, HoverContents, HoverParams, HoverProviderCapability, InitializeParams,
+        InitializeResult, InitializedParams, MarkupContent, MarkupKind, MessageType,
+        ServerCapabilities, TextDocumentSyncCapability, TextDocumentSyncKind, Url,
     },
     Client, LanguageServer,
 };
@@ -231,9 +234,112 @@ impl LanguageServer for RuuLangServer {
         ) as usize;
 
         let descension = schema.descend_at((location, location));
-        self.client
-            .log_message(MessageType::INFO, format!("Found: {:#?}", descension))
-            .await;
+
+        if let Some(stack) = descension {
+            let mut current_entity: Option<&Entity> = None;
+            let mut final_result: Option<String> = None;
+
+            self.client
+                .log_message(MessageType::INFO, format!("Stack {:#?}", &stack))
+                .await;
+
+            for ctx in stack {
+                match (&current_entity, &ctx) {
+                    (
+                        None,
+                        DescentContext {
+                            context: Context::Entrypoint(entrypoint),
+                            ..
+                        },
+                    ) => {
+                        let entity_name = &entrypoint.entrypoint;
+                        let Some(found_entity) = workspace.entity_by_name(&entity_name)
+                        else { continue; };
+
+                        current_entity = Some(&found_entity.data.data);
+
+                        let mut result = String::new();
+                        result.push_str(format!("`{}`\n\n", found_entity.data.data.name).as_str());
+
+                        if let Some(docstring) = &found_entity.data.docstring {
+                            result.push_str(&docstring);
+                        }
+
+                        final_result = Some(result);
+                    }
+
+                    (
+                        None,
+                        DescentContext {
+                            context: Context::Entity(entity),
+                            ..
+                        },
+                    ) => {
+                        let entity_name = &entity.name;
+
+                        let Some(found_entity) = workspace.entity_by_name(&entity_name)
+                        else { continue; };
+                        current_entity = Some(&found_entity.data.data);
+
+                        let mut result = String::new();
+                        result.push_str(format!("`{}`\n\n", found_entity.data.data.name).as_str());
+
+                        if let Some(docstring) = &found_entity.data.docstring {
+                            result.push_str(&docstring);
+                        }
+
+                        final_result = Some(result);
+                    }
+
+                    (
+                        Some(entity),
+                        DescentContext {
+                            context: Context::Rule(rule),
+                            ..
+                        },
+                    ) => {
+                        let Some(relationship_object) = entity
+                            .relationships
+                            .iter()
+                            .find(|x| x.data.relationship_name.data == rule.relationship.data)
+                        else { continue };
+
+                        let Some(next_entity) = workspace.entity_by_name(&relationship_object.data.entity_name)
+                        else { continue };
+
+                        let mut result = String::new();
+
+                        result.push_str(
+                            format!(
+                                "`{} -[{}]-> {}`\n\n",
+                                &entity.name, &rule.relationship, &next_entity.data.data.name
+                            )
+                            .as_str(),
+                        );
+
+                        if let Some(docstring) = &relationship_object.docstring {
+                            result.push_str(&docstring);
+                        }
+
+                        final_result = Some(result);
+
+                        current_entity = Some(&next_entity.data.data);
+                    }
+
+                    _ => {}
+                }
+            }
+
+            if let Some(result) = final_result {
+                return Ok(Some(Hover {
+                    contents: HoverContents::Markup(MarkupContent {
+                        kind: MarkupKind::Markdown,
+                        value: result,
+                    }),
+                    range: None,
+                }));
+            }
+        }
 
         Ok(None)
     }

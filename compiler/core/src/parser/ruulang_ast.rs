@@ -2,10 +2,18 @@ use std::hash::{Hash, Hasher};
 
 use serde::{Deserialize, Serialize};
 
-use super::parse_location::{Context, Descendable, DescendableChildren, DescentContext, Parsed};
+use super::{
+    parse_location::{Context, Descendable, DescendableChildren, DescentContext, Parsed},
+    schema_ast::Entity,
+};
 
 pub trait RuuLangSerialize {
     fn ruulang_serialize(&self, indent: usize) -> String;
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct Grant {
+    pub grant: Vec<String>,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -140,8 +148,11 @@ impl RuuLangSerialize for Rule {
 }
 
 impl<'a> DescendableChildren<'a> for Rule {
-    fn context_and_name(&self) -> (Context<'a>, Option<String>) {
-        (Context::None, Some(self.relationship.data.clone()))
+    fn context_and_name(&'a self) -> (Context<'a>, Option<String>) {
+        (
+            Context::Rule(Box::new(&self)),
+            Some(self.relationship.data.clone()),
+        )
     }
 
     fn descend(&self) -> Vec<&dyn Descendable> {
@@ -257,8 +268,11 @@ impl RuuLangSerialize for Fragment {
 }
 
 impl<'a> DescendableChildren<'a> for Fragment {
-    fn context_and_name(&self) -> (Context<'a>, Option<String>) {
-        (Context::None, Some(self.name.data.clone()))
+    fn context_and_name(&'a self) -> (Context<'a>, Option<String>) {
+        (
+            Context::Fragment(Box::new(&self)),
+            Some(self.name.data.clone()),
+        )
     }
 
     fn descend(&self) -> Vec<&dyn Descendable> {
@@ -277,6 +291,9 @@ pub struct RuuLangFile {
 
     #[serde(skip_serializing_if = "Vec::is_empty", default)]
     pub fragments: Vec<Parsed<Fragment>>,
+
+    #[serde(skip_serializing_if = "Vec::is_empty", default)]
+    pub entities: Vec<Parsed<Entity>>,
 }
 
 impl Hash for RuuLangFile {
@@ -321,6 +338,7 @@ impl<'a> DescendableChildren<'a> for RuuLangFile {
             .iter()
             .map(|x| x as &dyn Descendable)
             .chain(self.fragments.iter().map(|x| x as &dyn Descendable))
+            .chain(self.entities.iter().map(|x| x as &dyn Descendable))
             .collect()
     }
 }
@@ -332,11 +350,11 @@ impl Descendable for RuuLangFile {
     ) -> Option<Vec<super::parse_location::DescentContext>> {
         let children = self.descend();
 
+        let mut result = vec![DescentContext::new(Context::None, None, &None)];
         for child in children {
             if let Some(mut ctx) = child.descend_at(loc) {
-                ctx.push(DescentContext::new(Context::None, None));
-
-                return Some(ctx);
+                result.append(&mut ctx);
+                return Some(result);
             }
         }
 

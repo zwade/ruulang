@@ -214,6 +214,12 @@ impl Workspace {
         self.files.iter().find(|x| &x.origin == path)
     }
 
+    pub fn entity_by_name(&self, entity: &String) -> Option<&WithOrigin<Parsed<Entity>>> {
+        self.entities
+            .iter()
+            .find(|x| &x.data.data.name.data == entity)
+    }
+
     fn parse_file(&self, contents: &String) -> Result<(RuuLangSchema, RuuLangFile)> {
         let token_contents = ParserStatement::parse(from_utf8(contents.as_bytes()).unwrap())?;
         let (schemata, rule) = token_contents.assemble();

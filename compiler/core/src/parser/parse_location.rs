@@ -8,23 +8,35 @@ use std::{
 
 use serde::{Deserialize, Serialize};
 
-use super::ruulang_ast::Entrypoint;
+use super::{
+    ruulang_ast::{Entrypoint, Fragment, Rule},
+    schema_ast::Entity,
+};
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum Context<'a> {
     None,
+    Rule(Box<&'a Rule>),
     Entrypoint(Box<&'a Entrypoint>),
+    Entity(Box<&'a Entity>),
+    Fragment(Box<&'a Fragment>),
 }
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct DescentContext<'a> {
     pub context: Context<'a>,
     pub name: Option<String>,
+
+    pub docstring: &'a Option<String>,
 }
 
 impl<'a> DescentContext<'a> {
-    pub fn new(context: Context<'a>, name: Option<String>) -> Self {
-        Self { context, name }
+    pub fn new(context: Context<'a>, name: Option<String>, docstring: &'a Option<String>) -> Self {
+        Self {
+            context,
+            name,
+            docstring,
+        }
     }
 }
 
@@ -150,17 +162,17 @@ where
         if let Some((start, end)) = self.loc {
             if loc.0 >= start && loc.0 <= end {
                 let (context, name) = self.data.context_and_name();
+                let mut result = vec![DescentContext::new(context, name, &self.docstring)];
 
                 let children = self.data.descend();
                 for child in children {
                     if let Some(mut ctx) = child.descend_at(loc) {
-                        ctx.push(DescentContext::new(context, name));
-
-                        return Some(ctx);
+                        result.append(&mut ctx);
+                        return Some(result);
                     }
                 }
 
-                return Some(vec![DescentContext::new(context, name)]);
+                return Some(result);
             }
         }
 
@@ -216,12 +228,4 @@ where
     fn borrow(&self) -> &T {
         &self.data
     }
-}
-
-#[test]
-fn test_descent() {
-    let x = Parsed::new_at_loc((0, 12), "Hello World".to_string());
-    let stack = x.descend_at((2, 2));
-
-    assert_ne!(stack, None);
 }

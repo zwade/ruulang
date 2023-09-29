@@ -1,3 +1,5 @@
+use std::fs::DirEntry;
+
 use super::{
     parser_constructs::ParserStatement, ruulang_ast::RuuLangFile, schema_ast::RuuLangSchema,
 };
@@ -11,6 +13,7 @@ impl ParserAssemble for Vec<ParserStatement> {
         let mut fragments = Vec::new();
         let mut entrypoints = Vec::new();
         let mut entities = Vec::new();
+        let mut schema_entities = Vec::new();
 
         for statement in self {
             match statement {
@@ -23,14 +26,18 @@ impl ParserAssemble for Vec<ParserStatement> {
                 }
                 ParserStatement::Entity(entity) => {
                     entities.push(entity.clone());
+                    schema_entities.push(entity.clone());
                 }
             }
         }
 
-        let schema = RuuLangSchema { entities };
+        let schema = RuuLangSchema {
+            entities: schema_entities,
+        };
         let file = RuuLangFile {
             entrypoints,
             fragments,
+            entities,
         };
 
         (schema, file)
