@@ -1,27 +1,27 @@
-use serde::{Deserialize, Serialize};
+use serde::Serialize;
 
 use super::{
-    parse_location::{Context, Descendable, DescendableChildren, Parsed},
-    ruulang_ast::Attribute,
+    parse_location::{Context, Descendable, DescendableChildren, Identifier, Parsed},
+    ruulang_ast::{Attribute, Grant},
 };
 
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize)]
 pub struct RuuLangSchema {
     pub entities: Vec<Parsed<Entity>>,
 }
 
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize)]
 pub struct Entity {
-    pub name: Parsed<String>,
+    pub name: Parsed<Identifier>,
     pub relationships: Vec<Parsed<Relationship>>,
-    pub grants: Vec<Parsed<Vec<String>>>,
+    pub grants: Vec<Parsed<Grant>>,
 }
 
 impl<'a> DescendableChildren<'a> for Entity {
     fn context_and_name(&'a self) -> (Context<'a>, Option<String>) {
         (
             Context::Entity(Box::new(&self)),
-            Some(self.name.data.clone()),
+            Some(self.name.data.value.clone()),
         )
     }
 
@@ -35,16 +35,19 @@ impl<'a> DescendableChildren<'a> for Entity {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize)]
 pub struct Relationship {
-    pub relationship_name: Parsed<String>,
-    pub entity_name: Parsed<String>,
+    pub relationship_name: Parsed<Identifier>,
+    pub entity_name: Parsed<Identifier>,
     pub attributes: Vec<Parsed<Attribute>>,
 }
 
 impl<'a> DescendableChildren<'a> for Relationship {
     fn context_and_name(&self) -> (Context<'a>, Option<String>) {
-        (Context::None, Some(self.relationship_name.data.clone()))
+        (
+            Context::None,
+            Some(self.relationship_name.data.value.clone()),
+        )
     }
 
     fn descend(&self) -> Vec<&dyn Descendable> {

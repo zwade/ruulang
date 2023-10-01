@@ -219,7 +219,7 @@ impl<'a> Codegen<'a, PythonImport> for PythonCodegen<'a> {
                 s.iter_and_join(grants, " | ", |s, grant| {
                     s.write_token("tuple");
                     s.write_symbol("[");
-                    s.iter_and_join(&grant.data, ", ", |s, g| {
+                    s.iter_and_join(&grant.data.grant, ", ", |s, g| {
                         s.write("Literal[");
                         s.with_duouble_quote(|s| {
                             s.write(&g);
@@ -307,7 +307,7 @@ impl<'a> Codegen<'a, PythonImport> for PythonCodegen<'a> {
             s.iter_and_join(&fragment.grants, " | ", |s, grant| {
                 s.write_token("tuple");
                 s.write_symbol("[");
-                s.iter_and_join(&grant.data, ", ", |s, g| {
+                s.iter_and_join(&grant.data.grant, ", ", |s, g| {
                     s.write("Literal[");
                     s.with_duouble_quote(|s| {
                         s.write(&g);

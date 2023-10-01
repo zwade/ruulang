@@ -1,9 +1,15 @@
-use std::hash::{Hash, Hasher};
+use std::{
+    fmt::Display,
+    hash::{Hash, Hasher},
+    ops::Deref,
+};
 
-use serde::{Deserialize, Serialize};
+use serde::Serialize;
 
 use super::{
-    parse_location::{Context, Descendable, DescendableChildren, DescentContext, Parsed},
+    parse_location::{
+        Context, Descendable, DescendableChildren, DescentContext, Identifier, Parsed,
+    },
     schema_ast::Entity,
 };
 
@@ -11,14 +17,50 @@ pub trait RuuLangSerialize {
     fn ruulang_serialize(&self, indent: usize) -> String;
 }
 
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Eq)]
 pub struct Grant {
     pub grant: Vec<String>,
 }
 
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+impl Grant {
+    pub fn new(grant: Vec<String>) -> Self {
+        Grant { grant }
+    }
+}
+
+impl Deref for Grant {
+    type Target = Vec<String>;
+
+    fn deref(&self) -> &Self::Target {
+        &self.grant
+    }
+}
+
+impl Display for Grant {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        self.grant.join(".").fmt(f)
+    }
+}
+
+impl Hash for Grant {
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        self.grant.hash(state);
+    }
+}
+
+impl<'a> DescendableChildren<'a> for Grant {
+    fn context_and_name(&'a self) -> (Context<'a>, Option<String>) {
+        (Context::Grant(Box::new(&self)), Some(format!("{}", self)))
+    }
+
+    fn descend(&'a self) -> Vec<&dyn Descendable> {
+        vec![]
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize)]
 pub struct Attribute {
-    pub name: Parsed<String>,
+    pub name: Parsed<Identifier>,
     pub arguments: Vec<String>,
 }
 
@@ -54,8 +96,11 @@ impl RuuLangSerialize for Attribute {
 }
 
 impl<'a> DescendableChildren<'a> for Attribute {
-    fn context_and_name(&self) -> (Context<'a>, Option<String>) {
-        (Context::None, Some(self.name.data.clone()))
+    fn context_and_name(&'a self) -> (Context<'a>, Option<String>) {
+        (
+            Context::Attribute(&self),
+            Some(self.name.data.value.clone()),
+        )
     }
 
     fn descend(&self) -> Vec<&dyn Descendable> {
@@ -63,16 +108,16 @@ impl<'a> DescendableChildren<'a> for Attribute {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize)]
 pub struct Rule {
-    pub relationship: Parsed<String>,
+    pub relationship: Parsed<Identifier>,
     pub attributes: Vec<Parsed<Attribute>>,
-    pub grants: Vec<Parsed<Vec<String>>>,
+    pub grants: Vec<Parsed<Grant>>,
     pub rules: Vec<Parsed<Rule>>,
     pub recursive: bool,
 
     #[serde(skip_serializing_if = "Vec::is_empty", default)]
-    pub include_fragments: Vec<Parsed<String>>,
+    pub include_fragments: Vec<Parsed<Identifier>>,
 }
 
 impl Hash for Rule {
@@ -88,7 +133,7 @@ impl Hash for Rule {
 
 impl RuuLangSerialize for Rule {
     fn ruulang_serialize(&self, indent: usize) -> String {
-        if self.relationship.data == "*" {
+        if self.relationship.data.value == "*" {
             return format!("{}*\n", " ".repeat(indent * 4));
         }
 
@@ -151,7 +196,7 @@ impl<'a> DescendableChildren<'a> for Rule {
     fn context_and_name(&'a self) -> (Context<'a>, Option<String>) {
         (
             Context::Rule(Box::new(&self)),
-            Some(self.relationship.data.clone()),
+            Some(self.relationship.data.value.clone()),
         )
     }
 
@@ -167,9 +212,9 @@ impl<'a> DescendableChildren<'a> for Rule {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize)]
 pub struct Entrypoint {
-    pub entrypoint: Parsed<String>,
+    pub entrypoint: Parsed<Identifier>,
     pub rules: Vec<Parsed<Rule>>,
 }
 
@@ -204,7 +249,7 @@ impl<'a> DescendableChildren<'a> for Entrypoint {
     fn context_and_name(&'a self) -> (Context<'a>, Option<String>) {
         (
             Context::Entrypoint(Box::new(&self)),
-            Some(self.entrypoint.data.clone()),
+            Some(self.entrypoint.data.value.clone()),
         )
     }
 
@@ -217,12 +262,12 @@ impl<'a> DescendableChildren<'a> for Entrypoint {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize)]
 pub struct Fragment {
-    pub name: Parsed<String>,
-    pub for_entity: Parsed<String>,
+    pub name: Parsed<Identifier>,
+    pub for_entity: Parsed<Identifier>,
     pub rules: Vec<Parsed<Rule>>,
-    pub grants: Vec<Parsed<Vec<String>>>,
+    pub grants: Vec<Parsed<Grant>>,
 }
 
 impl Hash for Fragment {
@@ -271,7 +316,7 @@ impl<'a> DescendableChildren<'a> for Fragment {
     fn context_and_name(&'a self) -> (Context<'a>, Option<String>) {
         (
             Context::Fragment(Box::new(&self)),
-            Some(self.name.data.clone()),
+            Some(self.name.data.value.clone()),
         )
     }
 
@@ -281,11 +326,12 @@ impl<'a> DescendableChildren<'a> for Fragment {
             .map(|x| x as &dyn Descendable)
             .chain(self.grants.iter().map(|x| x as &dyn Descendable))
             .chain(std::iter::once(&self.name as &dyn Descendable))
+            .chain(std::iter::once(&self.for_entity as &dyn Descendable))
             .collect()
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize)]
 pub struct RuuLangFile {
     pub entrypoints: Vec<Parsed<Entrypoint>>,
 

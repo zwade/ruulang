@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 
 use crate::{
-    parser::{parse_location::Parsed, schema_ast::Relationship},
+    parser::{parse_location::Parsed, ruulang_ast::Grant, schema_ast::Relationship},
     utils::trie::Trie,
 };
 
@@ -10,7 +10,7 @@ pub struct TcEntity {
     pub name: String,
 
     relationships: HashMap<String, Parsed<Relationship>>,
-    grants: Trie<String, Parsed<Vec<String>>>,
+    grants: Trie<String, Parsed<Grant>>,
 }
 
 impl TcEntity {
@@ -25,18 +25,18 @@ impl TcEntity {
     pub fn add_relationship(&mut self, rel: Parsed<Relationship>) -> bool {
         if self
             .relationships
-            .contains_key(&rel.data.relationship_name.data)
+            .contains_key(&rel.data.relationship_name.data.value)
         {
             return false;
         }
 
         let rels = &mut self.relationships;
-        rels.insert(rel.data.relationship_name.data.clone(), rel);
+        rels.insert(rel.data.relationship_name.data.value.clone(), rel);
 
         true
     }
 
-    pub fn add_grant(&mut self, grant: Parsed<Vec<String>>) {
+    pub fn add_grant(&mut self, grant: Parsed<Grant>) {
         if self.grants.contains(&grant.data) {
             return;
         }

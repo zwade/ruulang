@@ -9,17 +9,20 @@ use std::{
 use serde::{Deserialize, Serialize};
 
 use super::{
-    ruulang_ast::{Entrypoint, Fragment, Rule},
+    ruulang_ast::{Attribute, Entrypoint, Fragment, Grant, Rule},
     schema_ast::Entity,
 };
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum Context<'a> {
     None,
+    Grant(Box<&'a Grant>),
+    Attribute(&'a Attribute),
     Rule(Box<&'a Rule>),
     Entrypoint(Box<&'a Entrypoint>),
     Entity(Box<&'a Entity>),
     Fragment(Box<&'a Fragment>),
+    Identifier(Box<&'a Identifier>),
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -227,5 +230,73 @@ where
 {
     fn borrow(&self) -> &T {
         &self.data
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub enum IdentifierKind {
+    Entity,
+    Fragment,
+    Rule,
+    Attribute,
+}
+
+#[derive(Debug, Clone, PartialEq)]
+pub struct Identifier {
+    pub value: String,
+    pub kind: IdentifierKind,
+}
+
+impl Identifier {
+    pub fn new(kind: IdentifierKind, value: String) -> Self {
+        Identifier { value, kind }
+    }
+}
+
+impl Display for Identifier {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        self.value.fmt(f)
+    }
+}
+
+impl Deref for Identifier {
+    type Target = String;
+
+    fn deref(&self) -> &Self::Target {
+        &self.value
+    }
+}
+
+impl Borrow<String> for Identifier {
+    fn borrow(&self) -> &String {
+        &self.value
+    }
+}
+
+impl<'a> DescendableChildren<'a> for Identifier {
+    fn context_and_name(&'a self) -> (Context<'a>, Option<String>) {
+        (
+            Context::Identifier(Box::new(&self)),
+            Some(self.value.clone()),
+        )
+    }
+
+    fn descend(&'a self) -> Vec<&dyn Descendable> {
+        vec![]
+    }
+}
+
+impl Serialize for Identifier {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        self.value.serialize(serializer)
+    }
+}
+
+impl Hash for Identifier {
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        self.value.hash(state);
     }
 }

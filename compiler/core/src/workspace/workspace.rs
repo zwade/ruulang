@@ -7,7 +7,7 @@ use crate::{
         assembler::ParserAssemble,
         parse_location::Parsed,
         parser_constructs::ParserStatement,
-        ruulang_ast::RuuLangFile,
+        ruulang_ast::{Fragment, RuuLangFile},
         schema_ast::{Entity, RuuLangSchema},
     },
     typechecker::typechecker::Typechecker,
@@ -217,7 +217,21 @@ impl Workspace {
     pub fn entity_by_name(&self, entity: &String) -> Option<&WithOrigin<Parsed<Entity>>> {
         self.entities
             .iter()
-            .find(|x| &x.data.data.name.data == entity)
+            .find(|x| &x.data.data.name.data.value == entity)
+    }
+
+    pub fn fragment_by_name_and_entity(
+        &self,
+        fragment: &String,
+        entity: &String,
+    ) -> Option<&Parsed<Fragment>> {
+        self.files
+            .iter()
+            .flat_map(|x| x.data.iter())
+            .flat_map(|x| &x.fragments)
+            .find(|x| {
+                &x.data.name.data.value == fragment && &x.data.for_entity.data.value == entity
+            })
     }
 
     fn parse_file(&self, contents: &String) -> Result<(RuuLangSchema, RuuLangFile)> {

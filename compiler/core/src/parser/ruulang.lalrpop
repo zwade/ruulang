@@ -1,7 +1,7 @@
 use crate::parser::{
-    ruulang_ast::{Rule, Attribute, Entrypoint, Fragment},
+    ruulang_ast::{Grant, Rule, Attribute, Entrypoint, Fragment},
     parser_constructs::ParserStatement,
-    parse_location::Parsed,
+    parse_location::{Parsed, IdentifierKind, Identifier},
     schema_ast::{Entity, Relationship},
     parser_utils::parse_docstrings
 };
@@ -28,7 +28,7 @@ pub Entry: ParserStatement = {
 
 pub Entrypoint: Parsed<Entrypoint> = {
     <l:@L>
-        "@" <s:Identifier> "{"
+        "@" <s:EntityIdentifier> "{"
             <rs: (<CommentedRule>)*>
             (<Comment>)*
         "}"
@@ -47,7 +47,7 @@ pub CommentedEntrypoint: Parsed<Entrypoint> = {
 
 pub Frag: Parsed<Fragment> = {
     <l:@L>
-        "fragment" <s:Identifier> "for" <e:Identifier> "{"
+        "fragment" <s:FragmentIdentifier> "for" <e:EntityIdentifier> "{"
             <g: (<CommentedGrant>)*>
             <c: (<CommentedRule>)*>
         "}"
@@ -68,7 +68,7 @@ pub CommentedFrag: Parsed<Fragment> = {
 
 pub Rel: Parsed<Rule> = {
     <l:@L>
-        <s:Identifier> <a: (<CommentedAttr>)*> "{"
+        <s:RuleIdentifier> <a: (<CommentedAttr>)*> "{"
             <g: (<CommentedGrant>)*>
             <f: (<CommentedFragmentInclude>)*>
             <c: (<CommentedRule>)*>
@@ -88,7 +88,7 @@ pub Rel: Parsed<Rule> = {
 
 pub Uni: Parsed<Rule> = {
     <l1:@L>
-        <s:Identifier> <a: (<CommentedAttr>)*> "{"
+        <s:RuleIdentifier> <a: (<CommentedAttr>)*> "{"
             <l2:@L>
                 "*"
             <r2:@R>
@@ -103,13 +103,13 @@ pub Uni: Parsed<Rule> = {
                     loc: None,
                     docstring: None,
                     file_name: None,
-                    data: vec!["read".to_string()]
+                    data: Grant::new(vec!["read".to_string()])
                 },
                 Parsed {
                     loc: None,
                     docstring: None,
                     file_name: None,
-                    data: vec!["write".to_string()]
+                    data: Grant::new(vec!["write".to_string()])
                 },
             ],
             rules: vec![Parsed::new_at_loc(
@@ -117,7 +117,10 @@ pub Uni: Parsed<Rule> = {
                 Rule {
                     relationship: Parsed::new_at_loc(
                         (l2, r2),
-                        "*".to_string()
+                        Identifier::new(
+                            IdentifierKind::Rule,
+                            "*".to_string(),
+                        )
                     ),
                     attributes: vec![],
                     grants: vec![
@@ -125,13 +128,13 @@ pub Uni: Parsed<Rule> = {
                             loc: None,
                             docstring: None,
                             file_name: None,
-                            data: vec!["read".to_string()]
+                            data: Grant::new(vec!["read".to_string()])
                         },
                         Parsed {
                             loc: None,
                             docstring: None,
                             file_name: None,
-                            data: vec!["write".to_string()]
+                            data: Grant::new(vec!["write".to_string()])
                         },
                     ],
                     rules: vec![],
@@ -156,7 +159,7 @@ pub CommentedRule: Parsed<Rule> = {
 
 pub Attr: Parsed<Attribute> = {
     <l:@L>
-        ":" <s:Identifier> "(" <a: (<Symbol>)*> ")"
+        ":" <s:AttributeIdentifier> "(" <a: (<Symbol>)*> ")"
     <r:@R> => Parsed::new_at_loc(
         (l, r),
         Attribute {
@@ -165,7 +168,7 @@ pub Attr: Parsed<Attribute> = {
         },
     ),
     <l:@L>
-        ":" <s:Identifier>
+        ":" <s:AttributeIdentifier>
     <r:@R> => Parsed::new_at_loc(
         (l, r),
         Attribute {
@@ -179,7 +182,7 @@ pub CommentedAttr: Parsed<Attribute> = {
     <c: (<Comment>)*> <r: Attr> => r.into_with_docstring(parse_docstrings(c)).0
 }
 
-pub Grant: Parsed<Vec<String>> = {
+pub Grant: Parsed<Grant> = {
     <l:@L>
         <s: Symbol> <sp: ("." <Symbol>)*> ";"
     <r:@R> => {
@@ -187,32 +190,27 @@ pub Grant: Parsed<Vec<String>> = {
         vec.extend(sp);
         Parsed::new_at_loc(
             (l, r),
-            vec
+            Grant::new(vec)
         )
     }
 }
 
-pub CommentedGrant: Parsed<Vec<String>> = {
+pub CommentedGrant: Parsed<Grant> = {
     <c: (<Comment>)*> <g: Grant> => g.into_with_docstring(parse_docstrings(c)).0
 }
 
-pub FragmentInclude: Parsed<String> = {
-    <l:@L>
-        "#" <f: Symbol> ";"
-    <r:@R> => Parsed::new_at_loc(
-        (l, r),
-        f
-    )
+pub FragmentInclude: Parsed<Identifier> = {
+    "#" <f: FragmentIdentifier> ";" => f
 }
 
-pub CommentedFragmentInclude: Parsed<String> = {
+pub CommentedFragmentInclude: Parsed<Identifier> = {
     <c: (<Comment>)*> <f: FragmentInclude> => f.into_with_docstring(parse_docstrings(c)).0
 }
 
 
 pub Entity: Parsed<Entity> = {
     <l:@L>
-        "entity" <e: Identifier> "{"
+        "entity" <e: EntityIdentifier> "{"
             <g: (<CommentedGrant>)*>
             <rs: (<CommentedRelationship>)*>
         "}"
@@ -232,9 +230,9 @@ pub CommentedEntity: Parsed<Entity> = {
 
 pub Relationship: Parsed<Relationship> = {
     <l:@L>
-        <rel: Identifier>
+        <rel: RuleIdentifier>
             <a: (<CommentedAttr>)*>
-            "->" <entity: Identifier> ";"
+            "->" <entity: EntityIdentifier> ";"
     <r:@R> => Parsed::new_at_loc(
         (l, r),
         Relationship {
@@ -251,12 +249,40 @@ pub CommentedRelationship: Parsed<Relationship> = {
 
 Symbol: String = <s:r"[a-zA-Z][a-zA-Z0-9-_]*|\*"> => s.to_string();
 
-Identifier: Parsed<String> = {
+// TODO(zwade): Can i use macros in LALRPOP
+EntityIdentifier: Parsed<Identifier> = {
     <l:@L>
         <id: Symbol>
     <r:@R> => Parsed::new_at_loc(
         (l, r),
-        id
+        Identifier::new(IdentifierKind::Entity, id)
+    )
+}
+
+FragmentIdentifier: Parsed<Identifier> = {
+    <l:@L>
+        <id: Symbol>
+    <r:@R> => Parsed::new_at_loc(
+        (l, r),
+        Identifier::new(IdentifierKind::Fragment, id)
+    )
+}
+
+RuleIdentifier: Parsed<Identifier> = {
+    <l:@L>
+        <id: Symbol>
+    <r:@R> => Parsed::new_at_loc(
+        (l, r),
+        Identifier::new(IdentifierKind::Rule, id)
+    )
+}
+
+AttributeIdentifier: Parsed<Identifier> = {
+    <l:@L>
+        <id: Symbol>
+    <r:@R> => Parsed::new_at_loc(
+        (l, r),
+        Identifier::new(IdentifierKind::Attribute, id)
     )
 }
 

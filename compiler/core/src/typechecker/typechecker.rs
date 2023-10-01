@@ -53,7 +53,7 @@ impl<'a> Typechecker<'a> {
     fn validate_entrypoint(&self, entrypoint: &Parsed<Entrypoint>) -> Vec<RuuLangError> {
         let mut violations = vec![];
 
-        let starting_entity = match self.entities.get(&entrypoint.entrypoint.data) {
+        let starting_entity = match self.entities.get(&entrypoint.entrypoint.data.value) {
             None => {
                 let missing_entity_name = &entrypoint.data.entrypoint;
                 let missing_entity_error = entrypoint.as_with_data(format!(
@@ -81,7 +81,7 @@ impl<'a> Typechecker<'a> {
     fn validate_fragment(&self, fragment: &Parsed<Fragment>) -> Vec<RuuLangError> {
         let mut violations = vec![];
 
-        let starting_entity = match self.entities.get(&fragment.for_entity.data) {
+        let starting_entity = match self.entities.get(&fragment.for_entity.data.value) {
             None => {
                 let missing_entity_name = &fragment.data.for_entity;
                 let missing_entity_error = fragment.as_with_data(format!(
@@ -129,7 +129,7 @@ impl<'a> Typechecker<'a> {
 
         let current_rel = match starting_entity.get_rule(&current_rule.relationship) {
             None => {
-                if &current_rule.data.relationship.data == "*" {
+                if &current_rule.data.relationship.data.value == "*" {
                     return violations;
                 }
 
@@ -151,7 +151,7 @@ impl<'a> Typechecker<'a> {
             Some(c) => c,
         };
 
-        let current_entity = match self.entities.get(&current_rel.entity_name.data) {
+        let current_entity = match self.entities.get(&current_rel.entity_name.data.value) {
             None => {
                 let missing_entity_name = current_rel.data.entity_name.clone();
                 let missing_entity_error = current_rel.as_with_data(format!(
@@ -180,7 +180,10 @@ impl<'a> Typechecker<'a> {
         }
 
         for included_fragment in &current_rule.data.include_fragments {
-            let fragment_key = (included_fragment.data.clone(), current_entity.name.clone());
+            let fragment_key = (
+                included_fragment.data.value.clone(),
+                current_entity.name.clone(),
+            );
 
             match self.fragments.get(&fragment_key) {
                 None => {
@@ -225,8 +228,8 @@ impl<'a> Typechecker<'a> {
                 let key = entity_name.clone();
                 let name_for_insert = entity_name.clone();
                 let found_entity = entity_map
-                    .entry(key.data)
-                    .or_insert_with(|| Box::new(TcEntity::new(name_for_insert.data)));
+                    .entry(key.data.value)
+                    .or_insert_with(|| Box::new(TcEntity::new(name_for_insert.data.value)));
 
                 entity.data.data.relationships.iter().for_each(|rel| {
                     let (updated_rel, _) = rel.clone().into_with_filename(origin.origin.clone());
@@ -259,8 +262,8 @@ impl<'a> Typechecker<'a> {
             })
             .flat_map(|schema| &schema.data.fragments)
             .map(|fragment| {
-                let fragment_name = fragment.data.name.data.clone();
-                let entity_name = fragment.data.for_entity.data.clone();
+                let fragment_name = fragment.data.name.data.value.clone();
+                let entity_name = fragment.data.for_entity.data.value.clone();
                 ((fragment_name, entity_name), fragment)
             })
             .collect::<HashMap<_, _>>()
