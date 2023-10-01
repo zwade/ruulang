@@ -10,19 +10,20 @@ use serde::{Deserialize, Serialize};
 
 use super::{
     ruulang_ast::{Attribute, Entrypoint, Fragment, Grant, Rule},
-    schema_ast::Entity,
+    schema_ast::{Entity, Relationship},
 };
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum Context<'a> {
     None,
-    Grant(Box<&'a Grant>),
+    Grant(&'a Grant),
     Attribute(&'a Attribute),
-    Rule(Box<&'a Rule>),
-    Entrypoint(Box<&'a Entrypoint>),
-    Entity(Box<&'a Entity>),
-    Fragment(Box<&'a Fragment>),
-    Identifier(Box<&'a Identifier>),
+    Rule(&'a Rule),
+    Entrypoint(&'a Entrypoint),
+    Relationship(&'a Relationship),
+    Entity(&'a Entity),
+    Fragment(&'a Fragment),
+    Identifier(&'a Identifier),
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -275,10 +276,7 @@ impl Borrow<String> for Identifier {
 
 impl<'a> DescendableChildren<'a> for Identifier {
     fn context_and_name(&'a self) -> (Context<'a>, Option<String>) {
-        (
-            Context::Identifier(Box::new(&self)),
-            Some(self.value.clone()),
-        )
+        (Context::Identifier(&self), Some(self.value.clone()))
     }
 
     fn descend(&'a self) -> Vec<&dyn Descendable> {

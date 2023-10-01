@@ -50,7 +50,7 @@ impl Hash for Grant {
 
 impl<'a> DescendableChildren<'a> for Grant {
     fn context_and_name(&'a self) -> (Context<'a>, Option<String>) {
-        (Context::Grant(Box::new(&self)), Some(format!("{}", self)))
+        (Context::Grant(&self), Some(format!("{}", self)))
     }
 
     fn descend(&'a self) -> Vec<&dyn Descendable> {
@@ -195,7 +195,7 @@ impl RuuLangSerialize for Rule {
 impl<'a> DescendableChildren<'a> for Rule {
     fn context_and_name(&'a self) -> (Context<'a>, Option<String>) {
         (
-            Context::Rule(Box::new(&self)),
+            Context::Rule(&self),
             Some(self.relationship.data.value.clone()),
         )
     }
@@ -248,7 +248,7 @@ impl RuuLangSerialize for Entrypoint {
 impl<'a> DescendableChildren<'a> for Entrypoint {
     fn context_and_name(&'a self) -> (Context<'a>, Option<String>) {
         (
-            Context::Entrypoint(Box::new(&self)),
+            Context::Entrypoint(&self),
             Some(self.entrypoint.data.value.clone()),
         )
     }
@@ -314,10 +314,7 @@ impl RuuLangSerialize for Fragment {
 
 impl<'a> DescendableChildren<'a> for Fragment {
     fn context_and_name(&'a self) -> (Context<'a>, Option<String>) {
-        (
-            Context::Fragment(Box::new(&self)),
-            Some(self.name.data.value.clone()),
-        )
+        (Context::Fragment(&self), Some(self.name.data.value.clone()))
     }
 
     fn descend(&self) -> Vec<&dyn Descendable> {

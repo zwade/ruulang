@@ -19,10 +19,7 @@ pub struct Entity {
 
 impl<'a> DescendableChildren<'a> for Entity {
     fn context_and_name(&'a self) -> (Context<'a>, Option<String>) {
-        (
-            Context::Entity(Box::new(&self)),
-            Some(self.name.data.value.clone()),
-        )
+        (Context::Entity(&self), Some(self.name.data.value.clone()))
     }
 
     fn descend(&self) -> Vec<&dyn Descendable> {
@@ -43,9 +40,9 @@ pub struct Relationship {
 }
 
 impl<'a> DescendableChildren<'a> for Relationship {
-    fn context_and_name(&self) -> (Context<'a>, Option<String>) {
+    fn context_and_name(&'a self) -> (Context<'a>, Option<String>) {
         (
-            Context::None,
+            Context::Relationship(&self),
             Some(self.relationship_name.data.value.clone()),
         )
     }

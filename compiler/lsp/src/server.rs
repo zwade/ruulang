@@ -425,6 +425,36 @@ impl LanguageServer for RuuLangServer {
                     }
 
                     (
+                        Some(entity),
+                        _,
+                        DescentContext {
+                            context: Context::Relationship(rel),
+                            ..
+                        },
+                    ) => {
+                        let Some(from_entity) = workspace.entity_by_name(&entity.name)
+                        else { continue; };
+
+                        let Some(relationship_object) = entity
+                            .relationships
+                            .iter()
+                            .find(|x| x.data.relationship_name.data == rel.relationship_name.data)
+                        else { continue };
+
+                        let Some(next_entity) = workspace.entity_by_name(&relationship_object.data.entity_name)
+                        else { continue };
+
+                        final_result = Some(self.serialize_relationship(
+                            &from_entity.data,
+                            &relationship_object,
+                            &next_entity.data,
+                        ));
+
+                        entities.push(&next_entity.data.data);
+                        rels.push(&relationship_object);
+                    }
+
+                    (
                         _,
                         Some(rel),
                         DescentContext {
@@ -468,7 +498,7 @@ impl LanguageServer for RuuLangServer {
                         let Some(found_entity) = workspace.entity_by_name(&entity.name)
                         else { continue; };
 
-                        let Some(found_grant) = entity.grants.iter().find(|x| x.data == ***g)
+                        let Some(found_grant) = entity.grants.iter().find(|x| x.data == **g)
                         else { continue; };
 
                         final_result = Some(self.serialize_grant(&found_entity.data, &found_grant));
@@ -481,7 +511,7 @@ impl LanguageServer for RuuLangServer {
                             context: Context::Identifier(id),
                             ..
                         },
-                    ) => match **id {
+                    ) => match *id {
                         Identifier {
                             value: fragment,
                             kind: IdentifierKind::Fragment,
