@@ -63,7 +63,7 @@ where
     pub fn stringify<'a>(self, codegen: &impl Codegen<'a, Import>) -> String {
         let mut output = vec![];
 
-        for import in self.imports {
+        if self.imports.len() > 0 {
             let (entities, _) = codegen.get_schema_and_file();
             let entity_map = entities.iter().fold(HashMap::new(), |mut acc, entity| {
                 let new_file_name = entity.origin.with_extension("");
@@ -72,12 +72,11 @@ where
                 acc
             });
 
-            codegen
-                .serialize_import(&import, &entity_map)
-                .and_then(|import| {
-                    output.push(import);
-                    Some(())
-                });
+            if let Some(result) =
+                codegen.serialize_imports(&self.imports.iter().collect(), &entity_map)
+            {
+                output.push(result);
+            }
         }
 
         for code_block in self.code_blocks {
@@ -109,9 +108,9 @@ where
     fn get_schema_and_file(&self) -> (&'a Vec<WithOrigin<Parsed<Entity>>>, &'a RuuLangFile);
     fn get_origin(&self) -> &'a PathBuf;
 
-    fn serialize_import(
+    fn serialize_imports(
         &self,
-        _import: &Import,
+        _imports: &Vec<&Import>,
         _entity_map: &HashMap<&str, PathBuf>,
     ) -> Option<String> {
         None

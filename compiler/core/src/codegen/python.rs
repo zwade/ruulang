@@ -92,52 +92,112 @@ impl<'a> Codegen<'a, PythonImport> for PythonCodegen<'a> {
         self.origin
     }
 
-    fn serialize_import(
+    fn serialize_imports(
         &self,
-        import: &PythonImport,
+        imports: &Vec<&PythonImport>,
         entity_map: &HashMap<&str, PathBuf>,
     ) -> Option<String> {
         let mut s = self.new_codegen_helper();
-        match import {
-            PythonImport::Global((module, Some(name))) => {
-                s.write_token("from");
-                s.write_token(module);
-                s.write_token("import");
-                s.write_token(name);
+        let mut global_imports = vec![];
+        let mut global_imports_by_module = HashMap::<String, Vec<&String>>::new();
+        let mut local_imports_by_module = HashMap::<String, Vec<&String>>::new();
 
-                Some(s.serialize())
-            }
-            PythonImport::Global((module, None)) => {
-                s.write_token("import");
-                s.write_token(module);
+        for import in imports {
+            match import {
+                PythonImport::Global((module, None)) => {
+                    global_imports.push(module);
+                }
 
-                Some(s.serialize())
-            }
-            PythonImport::LocalImport((entity, value)) => {
-                let entity_loc = entity_map.get(entity.as_str());
-                let local_extns = self.file_name.with_extension("");
+                PythonImport::Global((module, Some(name))) => {
+                    let entry = global_imports_by_module.entry(module.clone());
+                    entry.or_default().push(name);
+                }
 
-                match entity_loc {
-                    None => None,
-                    Some(path) if path == &local_extns => None,
-                    Some(path) => {
-                        let local_path = path
-                            .strip_prefix(&self.config.workspace.root.as_ref().unwrap())
-                            .unwrap();
+                PythonImport::LocalImport((entity, value)) => {
+                    let entity_loc = entity_map.get(entity.as_str());
+                    let local_extns = self.file_name.with_extension("");
 
-                        s.write_token("from");
-                        s.iter_and_join(local_path.components(), ".", |s, x| {
-                            s.write(x.as_os_str().to_str().unwrap())
-                        });
-                        s.write(" ");
-                        s.write_token("import");
-                        s.write_token(value);
+                    match entity_loc {
+                        None => {}
+                        Some(path) if path == &local_extns => {}
+                        Some(path) => {
+                            let local_path = path
+                                .strip_prefix(&self.config.workspace.root.as_ref().unwrap())
+                                .unwrap();
 
-                        Some(s.serialize())
+                            let module = local_path
+                                .components()
+                                .map(|x| x.as_os_str().to_str().unwrap())
+                                .collect::<Vec<_>>()
+                                .join(".");
+
+                            let entry = local_imports_by_module.entry(module);
+                            entry.or_default().push(value);
+                        }
                     }
                 }
             }
         }
+
+        if global_imports.len() > 0 {
+            global_imports.sort();
+
+            for import in global_imports {
+                s.write(format!("import {}\n", import).as_str());
+            }
+
+            s.write("\n");
+        }
+
+        if global_imports_by_module.len() > 0 {
+            let mut keys = global_imports_by_module.keys().collect::<Vec<_>>();
+            keys.sort();
+
+            for key in keys {
+                s.write(format!("from {} import ", key).as_str());
+
+                let mut values = global_imports_by_module.get(key).unwrap().clone();
+                values.sort();
+
+                for (i, value) in values.iter().enumerate() {
+                    s.write(value);
+
+                    if i < values.len() - 1 {
+                        s.write(", ");
+                    }
+                }
+
+                s.write("\n");
+            }
+
+            s.write("\n");
+        }
+
+        if local_imports_by_module.len() > 0 {
+            let mut keys = local_imports_by_module.keys().collect::<Vec<_>>();
+            keys.sort();
+
+            for key in keys {
+                s.write(format!("from {} import ", key).as_str());
+
+                let mut values = local_imports_by_module.get(key).unwrap().clone();
+                values.sort();
+
+                for (i, value) in values.iter().enumerate() {
+                    s.write(value);
+
+                    if i < values.len() - 1 {
+                        s.write(", ");
+                    }
+                }
+
+                s.write("\n");
+            }
+
+            s.write("\n");
+        }
+
+        Some(s.serialize())
     }
 
     fn serialize_attribute(
