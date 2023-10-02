@@ -353,7 +353,6 @@ impl LanguageServer for RuuLangServer {
                         else { continue; };
 
                         entities.push(&found_entity.data.data);
-                        final_result = Some(self.serialize_entity(&found_entity.data));
                     }
 
                     (
@@ -364,13 +363,7 @@ impl LanguageServer for RuuLangServer {
                             ..
                         },
                     ) => {
-                        let entity_name = &entity.name;
-
-                        let Some(found_entity) = workspace.entity_by_name(&entity_name)
-                        else { continue; };
-
-                        entities.push(&found_entity.data.data);
-                        final_result = Some(self.serialize_entity(&found_entity.data));
+                        entities.push(entity);
                     }
 
                     (
@@ -382,16 +375,11 @@ impl LanguageServer for RuuLangServer {
                         },
                     ) => {
                         let entity_name = &found_fragment.for_entity.data;
-                        let fragment_name = &found_fragment.name;
 
                         let Some(found_entity) = workspace.entity_by_name(&entity_name)
                         else { continue; };
 
-                        let Some(fragment) = workspace.fragment_by_name_and_entity(&fragment_name, &entity_name)
-                        else { continue; };
-
                         entities.push(&found_entity.data.data);
-                        final_result = Some(self.serialize_fragment(&found_entity.data, &fragment));
                     }
 
                     (
@@ -402,9 +390,6 @@ impl LanguageServer for RuuLangServer {
                             ..
                         },
                     ) => {
-                        let Some(from_entity) = workspace.entity_by_name(&entity.name)
-                        else { continue; };
-
                         let Some(relationship_object) = entity
                             .relationships
                             .iter()
@@ -413,12 +398,6 @@ impl LanguageServer for RuuLangServer {
 
                         let Some(next_entity) = workspace.entity_by_name(&relationship_object.data.entity_name)
                         else { continue };
-
-                        final_result = Some(self.serialize_relationship(
-                            &from_entity.data,
-                            &relationship_object,
-                            &next_entity.data,
-                        ));
 
                         entities.push(&next_entity.data.data);
                         rels.push(&relationship_object);
@@ -432,9 +411,6 @@ impl LanguageServer for RuuLangServer {
                             ..
                         },
                     ) => {
-                        let Some(from_entity) = workspace.entity_by_name(&entity.name)
-                        else { continue; };
-
                         let Some(relationship_object) = entity
                             .relationships
                             .iter()
@@ -443,12 +419,6 @@ impl LanguageServer for RuuLangServer {
 
                         let Some(next_entity) = workspace.entity_by_name(&relationship_object.data.entity_name)
                         else { continue };
-
-                        final_result = Some(self.serialize_relationship(
-                            &from_entity.data,
-                            &relationship_object,
-                            &next_entity.data,
-                        ));
 
                         entities.push(&next_entity.data.data);
                         rels.push(&relationship_object);
@@ -463,16 +433,6 @@ impl LanguageServer for RuuLangServer {
                         },
                     ) => {
                         let parent_entity = entities[entities.len() - 2];
-
-                        self.client
-                            .log_message(
-                                MessageType::INFO,
-                                format!(
-                                    "{} -({}:{})-> ?",
-                                    parent_entity.name, rel.relationship_name, attr.name
-                                ),
-                            )
-                            .await;
 
                         let Some(relationship_object) = parent_entity
                             .relationships
@@ -537,6 +497,31 @@ impl LanguageServer for RuuLangServer {
                             else { continue; };
 
                             final_result = Some(self.serialize_entity(&found_entity.data));
+                        }
+
+                        Identifier {
+                            value: relationship_name,
+                            kind: IdentifierKind::Rule,
+                        } => {
+                            let preceding_entity = entities[entities.len() - 2];
+
+                            let Some(from_entity) = workspace.entity_by_name(&preceding_entity.name)
+                            else { continue; };
+
+                            let Some(relationship_object) = preceding_entity
+                            .relationships
+                            .iter()
+                            .find(|x| &x.data.relationship_name.data.value == relationship_name)
+                            else { continue };
+
+                            let Some(next_entity) = workspace.entity_by_name(&relationship_object.data.entity_name)
+                            else { continue };
+
+                            final_result = Some(self.serialize_relationship(
+                                &from_entity.data,
+                                &relationship_object,
+                                &next_entity.data,
+                            ));
                         }
 
                         _ => {}
