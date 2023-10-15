@@ -63,6 +63,10 @@ where
     pub fn stringify<'a>(self, codegen: &impl Codegen<'a, Import>) -> String {
         let mut output = vec![];
 
+        if let Some(result) = codegen.serialize_prelude() {
+            output.push(result);
+        }
+
         if self.imports.len() > 0 {
             let (entities, _) = codegen.get_schema_and_file();
             let entity_map = entities.iter().fold(HashMap::new(), |mut acc, entity| {
@@ -113,6 +117,10 @@ where
         _imports: &Vec<&Import>,
         _entity_map: &HashMap<&str, PathBuf>,
     ) -> Option<String> {
+        None
+    }
+
+    fn serialize_prelude(&self) -> Option<String> {
         None
     }
 

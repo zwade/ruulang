@@ -13,6 +13,7 @@ struct CliOptions {
     pub watch: bool,
     pub no_check: bool,
     pub no_emit: bool,
+    pub verbose: bool,
 }
 
 fn get_args() -> CliOptions {
@@ -47,6 +48,13 @@ fn get_args() -> CliOptions {
                 .required(false)
                 .action(ArgAction::SetTrue),
         )
+        .arg(
+            Arg::new("verbose")
+                .short('v')
+                .long("verbose")
+                .required(false)
+                .action(ArgAction::SetTrue),
+        )
         .get_matches();
 
     let config_default = "ruu.toml".to_string();
@@ -56,12 +64,14 @@ fn get_args() -> CliOptions {
     let watch = matches.get_one::<bool>("watch").unwrap_or(&false);
     let no_check = matches.get_one::<bool>("no-check").unwrap_or(&false);
     let no_emit = matches.get_one::<bool>("no-emit").unwrap_or(&false);
+    let verbose = matches.get_one::<bool>("verbose").unwrap_or(&false);
 
     CliOptions {
         config_path: config_path.clone(),
         watch: watch.clone(),
         no_check: no_check.clone(),
         no_emit: no_emit.clone(),
+        verbose: verbose.clone(),
     }
 }
 
@@ -105,7 +115,11 @@ async fn compile_on_change(workspace: &mut Workspace, options: &CliOptions) {
                     compile_all(workspace, options).await;
                 }
             }
-            Ok(_) => {}
+            Ok(e) => {
+                if options.verbose {
+                    println!("Ignoring event: {:?}", e);
+                }
+            }
             Err(e) => {
                 println!("Error while watching for changes:\n{:?}", e);
                 return;
@@ -119,9 +133,14 @@ async fn main() {
     let args = get_args();
 
     let working_dir = env::current_dir().unwrap();
-    let config = RuuLangConfig::load(Path::new(&args.config_path), &working_dir)
-        .await
-        .unwrap();
+    let path = RuuLangConfig::find(Path::new(&args.config_path)).await;
+
+    if args.verbose {
+        println!("Working directory: {:?}", working_dir);
+        println!("Found config path: {:?}", path);
+    }
+
+    let config = RuuLangConfig::load(&path, &working_dir).await.unwrap();
 
     let mut workspace = Workspace::new(config, working_dir);
 

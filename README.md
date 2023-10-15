@@ -52,6 +52,35 @@ In this example, employees with the `basic` role can read information about the 
 
 ## Syntax
 
+### Entities
+
+The schema of the language should be explicitly states for the  typechecker to determine whether the expressed policy is valid. To do this, we must first define the entities that can be created, the permissions that they grant, and the relationships they hold. An example of this (with docstrings) looks like this
+
+```ruulang
+/**
+ * The User entity represents a credentialed person who has
+ * already been authorized by the system
+ */
+entity User {
+    read;
+    /* The read.basic grant allows non-pii information */
+    read.basic;
+    /* The read.secret grant allows access to secrets */
+    read.secret;
+
+    /* The write grant allows the ability to change any user data */
+    write;
+
+    /* The `friend` edge grants access to a user's friends */
+    friend -> User;
+    /* The `company` edge grants access to companies for which the user is an employee */
+    company
+        /* The `role` attribute can be used to case on a user's level of access */
+        :role
+        -> Company;
+}
+```
+
 ### Entrypoints
 
 ```ruulang

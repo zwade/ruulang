@@ -81,7 +81,6 @@ pub Rel: Parsed<Rule> = {
             grants: g,
             rules: c,
             include_fragments: f,
-            recursive: false,
         },
     )
 }
@@ -138,12 +137,10 @@ pub Uni: Parsed<Rule> = {
                         },
                     ],
                     rules: vec![],
-                    recursive: true,
                     include_fragments: vec![],
                 }
             )],
             include_fragments: vec![],
-            recursive: false,
         }
     )
 }

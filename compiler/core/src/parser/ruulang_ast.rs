@@ -17,7 +17,7 @@ pub trait RuuLangSerialize {
     fn ruulang_serialize(&self, indent: usize) -> String;
 }
 
-#[derive(Debug, Clone, PartialEq, Serialize, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Grant {
     pub grant: Vec<String>,
 }
@@ -45,6 +45,15 @@ impl Display for Grant {
 impl Hash for Grant {
     fn hash<H: Hasher>(&self, state: &mut H) {
         self.grant.hash(state);
+    }
+}
+
+impl Serialize for Grant {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        self.grant.serialize(serializer)
     }
 }
 
@@ -114,7 +123,6 @@ pub struct Rule {
     pub attributes: Vec<Parsed<Attribute>>,
     pub grants: Vec<Parsed<Grant>>,
     pub rules: Vec<Parsed<Rule>>,
-    pub recursive: bool,
 
     #[serde(skip_serializing_if = "Vec::is_empty", default)]
     pub include_fragments: Vec<Parsed<Identifier>>,
@@ -127,7 +135,6 @@ impl Hash for Rule {
         self.include_fragments.hash(state);
         self.grants.hash(state);
         self.rules.hash(state);
-        self.recursive.hash(state);
     }
 }
 
