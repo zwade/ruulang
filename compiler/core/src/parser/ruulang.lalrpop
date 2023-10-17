@@ -50,6 +50,7 @@ pub Frag: Parsed<Fragment> = {
         "fragment" <s:FragmentIdentifier> "for" <e:EntityIdentifier> "{"
             <g: (<CommentedGrant>)*>
             <c: (<CommentedRule>)*>
+            (<Comment>)*
         "}"
     <r:@R> => Parsed::new_at_loc(
         (l, r),
@@ -72,6 +73,7 @@ pub Rel: Parsed<Rule> = {
             <g: (<CommentedGrant>)*>
             <f: (<CommentedFragmentInclude>)*>
             <c: (<CommentedRule>)*>
+            (<Comment>)*
         "}"
     <r:@R> => Parsed::new_at_loc(
         (l, r),
@@ -210,6 +212,7 @@ pub Entity: Parsed<Entity> = {
         "entity" <e: EntityIdentifier> "{"
             <g: (<CommentedGrant>)*>
             <rs: (<CommentedRelationship>)*>
+            (<Comment>)*
         "}"
     <r:@R> => Parsed::new_at_loc(
         (l, r),

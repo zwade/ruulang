@@ -1,61 +1,73 @@
 /**
     Comment 1
 */
-entity user {
+
+entity User {
+    read;
+    read.basic;
+    write;
+
     personnel
-        :is-rule
-        :is-admin(one two)
-        -> company;
+        :is-superuser
+        :authorization(admin)
+        -> Company;
 }
 
-entity company {
+entity Company {
     read;
     read.basic;
 
     write;
 
-    customer-app -> credit-app;
-    supplier-app -> credit-app;
+    customer-app -> CreditApp;
+    supplier-app -> CreditApp;
 }
 
-entity credit-app {
+entity CreditApp {
     read;
 
-    supplier -> company;
-    customer -> company;
+    supplier -> Company;
+    customer -> Company;
 }
 
 
-fragment basic-credit-app for credit-app {
-    // Comment 2
+fragment basic-credit-app for CreditApp {
     read;
 
-    /** Comment 3 **/
-    // Comment 4
     supplier {
         read;
-        // Comment 5
+
         supplier-app {
-            // Comment 6
             #basic-credit-app;
         }
     }
 
-    customer:has-test(first second) :has-another-test(third fourth) {
+    customer {
         read;
-        customer-app { #basic-credit-app; }
+
+        customer-app {
+            #basic-credit-app;
+        }
     }
 }
 
-// Comment 7
-@user {
-    // Comment 8
-    personnel:is-admin {
-        // Comment 9
+@User {
+    personnel {
         read.basic;
-        // Comment 10
+        customer-app { read; }
+    }
+
+    personnel:authorization(admin) {
+        read;
         write;
 
-        supplier-app { #basic-credit-app; }
+        customer-app {
+            write;
+        }
+
+        supplier-app {
+            read;
+            #basic-credit-app;
+        }
     }
 }

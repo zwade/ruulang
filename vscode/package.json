@@ -3,10 +3,17 @@
     "displayName": "RuuLang LSP",
     "description": "RuuLang VSCode Syntax Highlighting",
     "publisher": "zwad3",
-    "version": "0.0.1",
+    "version": "0.1.0",
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/zwade/ruulang-vscode"
+    },
+    "license": "MIT",
     "engines": {
         "vscode": "^1.34.1"
     },
+    "type": "commonjs",
+    "module": "dist/extension.js",
     "activationEvents": [
         "onLanguage:ruulang"
     ],
@@ -67,16 +74,26 @@
     },
     "scripts": {
         "vscode:prepublish": "yarn build",
-        "build": "cp ../compiler/target/release/ruulang-server ./bin/ && cp ../compiler/target/debug/ruulang-server ./bin/ruulang-server-debug && esbuild --bundle --outfile=dist/extension.js --external:vscode --platform=node --format=cjs ./src/extension.ts",
+        "build": "esbuild --bundle --outfile=dist/extension.js --external:vscode --platform=node --format=cjs ./src/extension.ts",
         "vscode-package": "pwd && yarn build && vsce package",
         "watch": "tsc -w"
     },
     "devDependencies": {
         "@types/node": "^20.3.1",
         "@types/vscode": "^1.34.1",
+        "@typescript-eslint/eslint-plugin": "^6.7.5",
+        "@typescript-eslint/parser": "^6.7.5",
         "esbuild": "^0.18.6",
+        "eslint": "^8.51.0",
+        "eslint-config-prettier": "^9.0.0",
+        "eslint-plugin-prettier": "^5.0.1",
+        "eslint-plugin-simple-import-sort": "^10.0.0",
+        "prettier": "^3.0.3",
         "typescript": "^5.1.3",
         "vscode-languageclient": "^8.1.0"
     },
-    "packageManager": "yarn@3.6.0"
+    "packageManager": "yarn@3.6.0",
+    "dependencies": {
+        "node-fetch": "^3.3.2"
+    }
 }

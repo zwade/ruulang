@@ -6,10 +6,11 @@ use std::time::Duration;
 use clap::{value_parser, Arg, ArgAction, Command};
 use notify::{DebouncedEvent, RecursiveMode, Watcher};
 use ruulang_core::{config::config::RuuLangConfig, workspace::workspace::Workspace};
+use tokio::fs;
 
 #[derive(Debug)]
 struct CliOptions {
-    pub config_path: String,
+    pub config_path: Option<String>,
     pub watch: bool,
     pub no_check: bool,
     pub no_emit: bool,
@@ -58,16 +59,14 @@ fn get_args() -> CliOptions {
         .get_matches();
 
     let config_default = "ruu.toml".to_string();
-    let config_path = matches
-        .get_one::<String>("config")
-        .unwrap_or(&config_default);
+    let config_path = matches.get_one::<String>("config").map(|x| x.to_owned());
     let watch = matches.get_one::<bool>("watch").unwrap_or(&false);
     let no_check = matches.get_one::<bool>("no-check").unwrap_or(&false);
     let no_emit = matches.get_one::<bool>("no-emit").unwrap_or(&false);
     let verbose = matches.get_one::<bool>("verbose").unwrap_or(&false);
 
     CliOptions {
-        config_path: config_path.clone(),
+        config_path,
         watch: watch.clone(),
         no_check: no_check.clone(),
         no_emit: no_emit.clone(),
@@ -132,11 +131,19 @@ async fn compile_on_change(workspace: &mut Workspace, options: &CliOptions) {
 async fn main() {
     let args = get_args();
 
-    let working_dir = env::current_dir().unwrap();
-    let path = RuuLangConfig::find(Path::new(&args.config_path)).await;
+    let working_dir = fs::canonicalize(env::current_dir().unwrap()).await.unwrap();
+    let base_path = if let Some(config_path) = &args.config_path {
+        fs::canonicalize(config_path).await.unwrap()
+    } else {
+        let mut path = working_dir.clone();
+        path.push("ruu.toml");
+        path
+    };
+
+    let path = RuuLangConfig::find(&base_path).await;
 
     if args.verbose {
-        println!("Working directory: {:?}", working_dir);
+        println!("Working directory: {:?}", base_path);
         println!("Found config path: {:?}", path);
     }
 
