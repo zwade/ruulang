@@ -1,2 +1,3 @@
 *.vsix
+bin
 yarn-error.log

@@ -10,18 +10,9 @@ import {
 
 import { resolveOrDownloadRuuLangServer } from "./serverControl.js";
 
-let client: LanguageClient;
+let client: LanguageClient | undefined = undefined;
 
-export async function activate(context: ExtensionContext) {
-    console.log("Activating server");
-
-    const command = await resolveOrDownloadRuuLangServer(context);
-
-    if (!command) {
-        window.showErrorMessage("Failed to resolve RuuLang server");
-        return;
-    }
-
+export const createLanguageServer = (command: string) => {
     const options: Executable = {
         command,
         transport: TransportKind.stdio,
@@ -44,16 +35,44 @@ export async function activate(context: ExtensionContext) {
     };
 
     client = new LanguageClient("RuuLang", "RuuLang Language Server", serverOptions, clientOptions, true);
+    return client;
+};
 
-    client.start();
+export async function activate(context: ExtensionContext) {
+    const restart = async (command: string | undefined) => {
+        try {
+            if (client) {
+                await client.stop();
+            }
+        } catch (_e) {
+            //pass
+        }
+
+        if (!command) {
+            window.showErrorMessage("Failed to resolve RuuLang server");
+            return;
+        }
+
+        client = createLanguageServer(command);
+        client.start();
+    };
 
     context.subscriptions.push(
         commands.registerCommand("extension.restart", async () => {
-            await client.stop();
-            await client.start();
+            const command = await resolveOrDownloadRuuLangServer(context, false);
+            await restart(command);
             window.showInformationMessage("RuuLang Language Server restarted");
         }),
+        commands.registerCommand("extension.redownload", async () => {
+            const command = await resolveOrDownloadRuuLangServer(context, true);
+            await restart(command);
+            window.showInformationMessage("RuuLang Language Server redownloaded");
+        }),
     );
+
+    console.log("Starting server");
+    const command = await resolveOrDownloadRuuLangServer(context);
+    restart(command);
 }
 
 export function deactivate(): Thenable<void> | undefined {

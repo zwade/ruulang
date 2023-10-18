@@ -81,8 +81,8 @@ export const downloadLatestRuuLangServer = async (context: ExtensionContext, cur
     return binaryPath;
 };
 
-export const resolveOrDownloadRuuLangServer = async (context: ExtensionContext) => {
-    if (process.env.DEBUG_MODE === "true") {
+export const resolveOrDownloadRuuLangServer = async (context: ExtensionContext, forceDownload = false) => {
+    if (process.env.DEBUG_MODE === "true" && !forceDownload) {
         return context.asAbsolutePath("../compiler/target/debug/ruulang-server");
     }
 
@@ -103,7 +103,7 @@ export const resolveOrDownloadRuuLangServer = async (context: ExtensionContext) 
         .filter((x): x is NonNullable<typeof x> => x !== null);
 
     const latestServer = possibleServers.sort(([a], [b]) => SemVer.compare(a, b)).pop();
-    if (latestServer) {
+    if (latestServer && !forceDownload) {
         // Run this in the background
         downloadLatestRuuLangServer(context, latestServer[0]);
 
