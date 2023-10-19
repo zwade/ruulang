@@ -45,7 +45,7 @@ export async function activate(context: ExtensionContext) {
                 await client.stop();
             }
         } catch (_e) {
-            //pass
+            // pass
         }
 
         if (!command) {

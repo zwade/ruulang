@@ -73,7 +73,7 @@ where
         }
 
         let el = head.unwrap().clone();
-        let mut child = self.children.entry(el).or_insert_with(|| TrieNode::new());
+        let child = self.children.entry(el).or_insert_with(|| TrieNode::new());
 
         if tail.is_empty() {
             if child.value.is_some() {

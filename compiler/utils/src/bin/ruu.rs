@@ -1,5 +1,5 @@
 use std::env;
-use std::path::{Path, PathBuf};
+use std::path::PathBuf;
 use std::sync::mpsc::channel;
 use std::time::Duration;
 
@@ -58,7 +58,6 @@ fn get_args() -> CliOptions {
         )
         .get_matches();
 
-    let config_default = "ruu.toml".to_string();
     let config_path = matches.get_one::<String>("config").map(|x| x.to_owned());
     let watch = matches.get_one::<bool>("watch").unwrap_or(&false);
     let no_check = matches.get_one::<bool>("no-check").unwrap_or(&false);
