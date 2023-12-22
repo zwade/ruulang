@@ -19,7 +19,7 @@ struct CliOptions {
 
 fn get_args() -> CliOptions {
     let matches = Command::new("ruu")
-        .version("0.1.0")
+        .version("0.1.2")
         .author("Zach Wade <zach@dttw.tech>")
         .arg(
             Arg::new("config")
