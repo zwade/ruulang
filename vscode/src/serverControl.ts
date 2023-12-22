@@ -90,9 +90,10 @@ export const resolveOrDownloadRuuLangServer = async (context: ExtensionContext, 
     await fs.mkdir(binaryRoot, { recursive: true });
 
     const files = await fs.readdir(binaryRoot);
+    console.log(binaryRoot, files);
     const possibleServers = files
         .map((file): [SemVer, string] | null => {
-            const match = file.match(/^ruulang-server\.v(\d+)\.(\d+)\.(\d+)$/);
+            const match = file.match(/^ruulang-server\.[^.]+\.v(\d+)\.(\d+)\.(\d+)$/);
             if (!match) {
                 return null;
             }

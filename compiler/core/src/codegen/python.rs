@@ -358,6 +358,7 @@ impl<'a> Codegen<'a, PythonImport> for PythonCodegen<'a> {
 
     fn serialize_fragment(&self, fragment: &Fragment) -> Option<CodegenState<PythonImport>> {
         let mut s = CodegenHelper::new("    ", "\n");
+        let mut state = CodegenState::new();
 
         let cls_name = format!(
             "{}{}Fragment",
@@ -373,6 +374,11 @@ impl<'a> Codegen<'a, PythonImport> for PythonCodegen<'a> {
             .as_str(),
         ));
         PythonImport::with_class(&mut s, &cls_name, vec!["Fragment"], |s| {
+            s.write_token("name: Literal[");
+            s.with_duouble_quote(|s| s.write(&fragment.name));
+            s.write_symbol("]");
+            s.write_line(None);
+
             s.write_token("grants");
             s.write_symbol(": ");
             s.write_symbol("tuple[");
@@ -392,9 +398,24 @@ impl<'a> Codegen<'a, PythonImport> for PythonCodegen<'a> {
 
             s.write_symbol(", ...]");
             s.write_line(None);
+
+            s.write_token("rules");
+            s.write_symbol(": ");
+            s.write_symbol("\"tuple[");
+            s.iter_and_join(&fragment.rules, " | ", |s, rule| {
+                let rel_name = format!(
+                    "{}{}Rule",
+                    &codegen_utils::camel_case(&fragment.for_entity),
+                    &codegen_utils::camel_case(&rule.data.relationship),
+                );
+
+                s.write(&rel_name);
+                state.add_import(PythonImport::new_local(&fragment.for_entity, &rel_name))
+            });
+            s.write_symbol(", ...]\"");
+            s.write_line(None);
         });
 
-        let mut state = CodegenState::new();
         state.write_code(s.serialize());
         state.add_import(PythonImport::new_global("ruu_runtime", "Fragment"));
         state.add_import(PythonImport::new_global("typing", "Literal"));
